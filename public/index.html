@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line 3: Reading the Weekly Numbers</title>
+<style>
+:root{
+  --ink:#16191d; --ink-soft:#474d54; --ink-faint:#687079;
+  --line:#c9cdd2; --line-soft:#e4e7ea; --rule:#edeff1;
+  --bg:#ffffff; --panel:#f5f6f8; --panel-2:#eceff2;
+  --bar:#3d5a73; --bar-sel:#15293c; --bar-match:#1f5f3f; --bar-dim:#b4bfc9;
+  --accent:#1d3448; --good:#1f5f3f; --good-bg:#f1f7f3; --good-line:#cfe3d7;
+  --warn:#7a3b12; --warn-bg:#fdf6f0; --warn-line:#ebd8c6;
+  --focus:#0b63ce;
+  --lens:#5b3fa8; --lens-bg:#f4f1fb; --lens-line:#cfc3ea; --lens-ink:#4a3390;
+  --radius:7px;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --t-fast:140ms; --t-mid:230ms; --t-slow:340ms;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+::selection{background:#d7e3ee; color:var(--ink)}
+:focus-visible{outline:3px solid var(--focus); outline-offset:2px; border-radius:3px}
+
+.wrap{max-width:1060px; margin:0 auto; padding:0 18px 104px}
+.nav.hidden + * , body:has(.nav.hidden) .wrap{padding-bottom:40px}
+header.top{border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:40}
+.top-in{max-width:1060px; margin:0 auto; padding:10px 18px; display:flex; gap:12px; align-items:center}
+.top h1{font-size:16px; margin:0; font-weight:700; letter-spacing:-.1px}
+.steps{margin-left:auto; display:flex; gap:5px; align-items:center}
+.steps .dot{
+  width:8px; height:8px; border-radius:50%; background:var(--line);
+  transition:background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+.steps .dot.done{background:var(--bar)}
+.steps .dot.now{background:var(--accent); transform:scale(1.6)}
+.steps .lbl{font-size:13px; color:var(--ink-soft); margin-left:7px; white-space:nowrap}
+
+h2{font-size:26px; line-height:1.2; margin:24px 0 4px; letter-spacing:-.4px}
+h3{font-size:16.5px; margin:0 0 8px; letter-spacing:-.1px}
+p{margin:10px 0}
+.lede{color:var(--ink-soft); margin:0; font-size:16.5px; max-width:70ch}
+.small{font-size:15px}
+.muted{color:var(--ink-soft)}
+.tiny{font-size:13.5px; color:var(--ink-faint)}
+.prose{max-width:72ch}
+
+/* ---------- task strip ---------- */
+.task{
+  background:var(--accent); color:#fff; border-radius:var(--radius);
+  padding:13px 15px; margin:16px 0 14px; display:flex; gap:13px; align-items:flex-start;
+  transition:background var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+}
+.task .n{
+  flex:0 0 auto; font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  background:rgba(255,255,255,.18); border-radius:4px; padding:4px 8px; margin-top:1px;
+}
+.task .q{font-weight:600; margin:0; font-size:17px}
+.task .sub{font-size:14.5px; opacity:.86; margin:4px 0 0; font-weight:400}
+.task.done{background:var(--good-bg); color:var(--ink); box-shadow:inset 0 0 0 2px var(--good)}
+.task.done .n{background:var(--good); color:#fff}
+.task.turn{animation:taskTurn 620ms var(--ease)}
+@keyframes taskTurn{
+  0%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0)}
+  35%{box-shadow:inset 0 0 0 3px rgba(255,255,255,.65)}
+  100%{box-shadow:inset 0 0 0 0 rgba(255,255,255,0)}
+}
+
+/* ---------- layout ---------- */
+.split{display:grid; gap:20px; align-items:start}
+.split > *{min-width:0}
+@media(min-width:880px){
+  .split{grid-template-columns:minmax(270px,1fr) minmax(400px,1.4fr)}
+  .split.wide-left{grid-template-columns:minmax(310px,1.05fr) minmax(360px,1fr)}
+  .split.wide-right{grid-template-columns:minmax(250px,.8fr) minmax(440px,1.45fr)}
+}
+.sticky-col{position:sticky; top:62px}
+body.lens .sticky-col{top:120px}
+@media(max-width:879px){.sticky-col{position:static}}
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+.duo > *{min-width:0}
+@media(max-width:700px){.duo{grid-template-columns:1fr; gap:16px}}
+
+.panel{background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--radius); padding:14px 15px; margin:12px 0}
+.panel.flush{margin-top:0}
+.note-card{background:var(--warn-bg); border-color:var(--warn-line)}
+.takeaway{background:var(--good-bg); border-color:var(--good-line)}
+.panel h3 .pre{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); display:block; margin-bottom:2px; font-weight:700}
+
+/* feedback slot: reserved so nothing jumps, always beside its control */
+.slot{
+  min-height:82px; margin:12px 0 0; padding:12px 14px; border-radius:var(--radius);
+  background:var(--panel); border:1px solid var(--line-soft);
+  font-size:15.5px; line-height:1.5;
+  transition:background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+}
+.slot:empty::before{content:attr(data-empty); color:var(--ink-faint); font-size:15px}
+.slot.ok{background:var(--good-bg); border-color:var(--good-line)}
+.slot.no{background:var(--warn-bg); border-color:var(--warn-line)}
+.slot .k{font-weight:700}
+.slot.ok .k{color:var(--good)}
+.slot.no .k{color:var(--warn)}
+
+button{font:inherit; cursor:pointer}
+.btn{
+  background:var(--accent); color:#fff; border:1px solid var(--accent);
+  padding:12px 18px; border-radius:var(--radius); font-weight:600; min-height:48px;
+  transition:background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.btn:hover{background:#13263a}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{background:#6b7480; border-color:#6b7480; cursor:not-allowed}
+.btn-sec{background:#fff; color:var(--accent); border:1px solid var(--line)}
+.btn-sec:hover{background:var(--panel)}
+.btn-big{font-size:18px; padding:16px 22px; min-height:60px; flex:1 1 230px}
+
+/* ---------- chart ---------- */
+.chart{margin:0}
+.chart-head{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-bottom:10px}
+.chart-title{font-weight:700; font-size:16px}
+.chart-dir{font-size:13.5px; color:var(--ink-faint)}
+.legend-t{
+  font-size:13.5px; color:var(--warn); font-weight:600; margin-left:auto;
+  display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
+}
+.legend-t i{display:block; width:22px; height:0; border-top:2px dashed var(--warn)}
+.legend-m{color:var(--accent)}
+.legend-m i{border-top:2px solid var(--accent)}
+.plotwrap{display:flex; gap:8px}
+.yaxis{
+  flex:0 0 auto; width:40px; position:relative; height:196px;
+  font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums;
+}
+.yaxis span{position:absolute; right:0; transform:translateY(50%); line-height:1; bottom:0}
+.plot{
+  position:relative; flex:1 1 auto; height:196px; display:flex; align-items:flex-end; gap:5px;
+  border-bottom:2px solid var(--ink); border-left:1px solid var(--line);
+}
+.plot.sm,.yaxis.sm{height:156px}
+.grid{position:absolute; left:0; right:0; border-top:1px solid var(--rule); z-index:0}
+.targetline{position:absolute; left:0; right:0; border-top:2px dashed var(--warn); z-index:2; pointer-events:none}
+.meanline{position:absolute; left:0; right:0; border-top:2px solid var(--accent); z-index:2; pointer-events:none;
+  transition:bottom var(--t-slow) var(--ease)}
+.meanline b{position:absolute; right:4px; top:-21px; font-size:12px; background:var(--accent); color:#fff;
+  padding:1px 6px; border-radius:3px; font-variant-numeric:tabular-nums}
+.col{
+  flex:1 1 0; min-width:0; height:100%; display:flex; flex-direction:column;
+  justify-content:flex-end; background:none; border:0; padding:0; position:relative; z-index:1;
+}
+.col .bar{
+  background:var(--bar); border-radius:4px 4px 0 0; min-height:3px; width:100%;
+  max-width:42px; margin:0 auto; position:relative;
+  transition:background var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+}
+.col .val{
+  position:absolute; top:6px; left:0; right:0; text-align:center; color:#fff;
+  font-size:12px; font-weight:700; letter-spacing:-.2px; pointer-events:none;
+  font-variant-numeric:tabular-nums;
+}
+.col:hover .bar{filter:brightness(1.18)}
+/* The focusable control is the full-height column, so tint it to show the hit
+   area, and ring the bar itself so the eye lands on the value. One ring only. */
+.col:focus-visible{outline:none; background:rgba(11,99,206,.10); border-radius:5px}
+.col:focus-visible .bar,
+.plot.picking .col:not(.matched):focus-visible .bar{
+  outline:3px solid var(--focus); outline-offset:2px; outline-style:solid;
+}
+.col[aria-pressed="true"] .bar{background:var(--bar-sel); box-shadow:inset 0 0 0 3px #fff}
+.col.matched .bar{background:var(--bar-match)}
+.col.dim .bar{background:var(--bar-dim)}
+.col.hot .bar{background:var(--bar-sel); box-shadow:0 0 0 3px #fff, 0 0 0 5px var(--bar-sel)}
+.col .bar.clipped{border-radius:0}
+.col .bar.clipped::after{
+  content:""; position:absolute; left:0; right:0; bottom:-2px; height:5px;
+  background:repeating-linear-gradient(90deg,var(--bg) 0 3px,transparent 3px 6px);
+}
+/* data arriving: bars grow from the baseline, staggered */
+.plot.grow .bar{transform-origin:bottom; animation:grow var(--t-slow) var(--ease) backwards}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.col .bar.pop{animation:pop 480ms var(--ease)}
+@keyframes pop{0%{transform:scaleY(1)}40%{transform:scaleY(1.07)}100%{transform:scaleY(1)}}
+/* one clear "choose a week" affordance, not two overlapping outlines */
+.plot.picking .col:not(.matched) .bar{outline:2px dashed var(--accent); outline-offset:3px}
+.plot.picking .col:not(.matched):hover .bar,
+.plot.picking .col:not(.matched):focus-visible .bar{background:var(--bar-sel)}
+
+.xaxis{display:flex; gap:5px; font-size:12.5px; color:var(--ink-soft); margin-left:48px; margin-top:6px}
+.xaxis span{flex:1 1 0; text-align:center; min-width:0; font-variant-numeric:tabular-nums}
+.xaxis span.on{font-weight:700; color:var(--ink)}
+/* match badges live under the axis, where no target line can cross them */
+.xaxis b{
+  display:block; margin:3px auto 0; width:fit-content; font-size:11px; font-weight:700;
+  padding:1px 6px; border-radius:3px; background:var(--bar-match); color:#fff; letter-spacing:.02em;
+  animation:badgeIn var(--t-mid) var(--ease);
+}
+.xaxis b.ex{background:var(--panel-2); color:var(--ink-soft); border:1px solid var(--line)}
+.xaxis b .bs{display:none}
+@media(max-width:760px){ .xaxis b .bl{display:none} .xaxis b .bs{display:inline} }
+@keyframes badgeIn{from{opacity:0; transform:translateY(-5px)}to{opacity:1; transform:none}}
+.axis-note{font-size:13px; color:var(--ink-faint); margin:6px 0 0 48px}
+.tip{
+  position:absolute; z-index:6; background:var(--accent); color:#fff; font-size:13px;
+  padding:5px 9px; border-radius:4px; pointer-events:none; white-space:nowrap;
+  transform:translate(-50%,-100%); opacity:0; transition:opacity var(--t-fast) var(--ease);
+}
+.tip.on{opacity:1}
+.tip.below{transform:translate(-50%,0)}
+.mini .plot,.mini .yaxis{height:108px} .mini .xaxis{margin-left:0} .mini .yaxis{display:none}
+.mini .plot{border-left:0} .mini .chart-head{margin-bottom:5px} .mini .axis-note{margin-left:0}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto; margin:12px 0}
+.tablewrap[tabindex]{box-shadow:inset -14px 0 12px -12px rgba(22,25,29,.35)}
+.scrollhint{margin:10px 0 -4px; font-weight:600}
+table{border-collapse:collapse; width:100%; font-size:15px}
+th,td{border:1px solid var(--line); padding:8px 10px; text-align:right; white-space:nowrap;
+      font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{background:var(--panel); font-size:14px}
+tbody tr.hl td,tbody tr.hl th{background:var(--warn-bg)}
+td.fresh{animation:cellIn 700ms var(--ease)}
+@keyframes cellIn{0%{background:#c6e2d1}100%{background:transparent}}
+td.up{color:var(--warn); font-weight:700}
+td.down{color:var(--good); font-weight:700}
+tr.divider th,tr.divider td{border-top:3px solid var(--warn)}
+.arrow{font-size:11px; margin-left:3px}
+caption{text-align:left; padding:3px 0; font-size:13.5px; color:var(--ink-faint)}
+
+/* ---------- matching ---------- */
+.cards{display:grid; gap:9px; margin:0}
+.mcard{
+  text-align:left; background:#fff; border:2px solid var(--line); border-radius:var(--radius);
+  padding:12px 14px; display:flex; gap:11px; align-items:flex-start; min-height:48px; width:100%;
+  transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+             transform var(--t-fast) var(--ease);
+}
+.mcard:hover{border-color:var(--accent)}
+.mcard[aria-pressed="true"]{border-color:var(--accent); background:#e9eff4; transform:translateX(4px)}
+.mcard.done{border-color:var(--good); background:var(--good-bg); cursor:default; padding:9px 14px}
+.mcard.just{animation:matched 520ms var(--ease)}
+@keyframes matched{0%{transform:scale(1)}30%{transform:scale(1.025)}100%{transform:scale(1)}}
+.mcard[disabled],.seg button[disabled]{color:var(--ink); opacity:1; cursor:default}
+.mcard .tag{
+  flex:0 0 auto; font-size:12px; font-weight:700; border:1px solid var(--line);
+  border-radius:4px; padding:3px 8px; background:var(--panel); min-width:62px; text-align:center;
+}
+.mcard.done .tag{background:var(--good); color:#fff; border-color:var(--good)}
+.mcard[aria-pressed="true"] .tag{background:var(--accent); color:#fff; border-color:var(--accent)}
+.mcard.example{border-color:var(--line); background:var(--panel)}
+.mcard.example .tag{background:var(--panel-2); color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.ctrl{margin:0 0 14px}
+.ctrl > .lbl{font-weight:600; font-size:14.5px; display:block; margin-bottom:7px}
+.seg{display:flex; flex-wrap:wrap; gap:8px}
+.seg button{
+  background:#fff; border:2px solid var(--line); border-radius:var(--radius);
+  padding:10px 14px; min-height:48px; font-size:15px;
+  transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+             color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.seg button:hover{border-color:var(--accent)}
+.seg button:active{transform:translateY(1px)}
+.seg button[aria-pressed="true"]{border-color:var(--accent); background:var(--accent); color:#fff; font-weight:600}
+.seg button[disabled],.seg button[disabled][aria-pressed="true"]{
+  border-color:var(--good); background:var(--good-bg); color:var(--good); font-weight:700; opacity:1;
+}
+.pips{display:flex; gap:6px; align-items:center; margin-top:9px; font-size:13.5px; color:var(--ink-faint)}
+.pips i{width:9px; height:9px; border-radius:50%; background:var(--line); display:block;
+  transition:background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease)}
+.pips i.on{background:var(--bar); transform:scale(1.15)}
+
+/* ---------- the note document ---------- */
+.doc{
+  border:1px solid var(--line); border-radius:var(--radius); padding:24px 26px; background:#fff;
+  max-width:none;
+}
+.doc .dochead{border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:16px}
+.doc .dochead h3{font-size:19px; margin:0}
+.doc .docmeta{font-size:14px; color:var(--ink-faint); margin:3px 0 0}
+.doc p{font-size:17px; line-height:1.65; max-width:78ch}
+.doc textarea{
+  display:block; width:100%; margin:8px 0 2px; font:inherit; font-size:16.5px; padding:11px 13px;
+  border:0; border-bottom:2px solid var(--line); background:var(--panel); border-radius:5px 5px 0 0;
+  resize:vertical; min-height:62px; color:var(--ink);
+  transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.doc textarea:hover{background:var(--panel-2)}
+.doc textarea:focus{border-color:var(--accent); background:#fff; outline:3px solid var(--focus); outline-offset:1px}
+.doc .why{font-size:14px; color:var(--ink-faint); margin:4px 0 0}
+.doc .starter{
+  background:none; border:0; color:var(--focus); font-size:14px; text-decoration:underline;
+  padding:5px 0; cursor:pointer;
+}
+.egs{margin-top:7px; padding:10px 12px; background:var(--panel); border:1px solid var(--line-soft);
+     border-radius:var(--radius)}
+.egs li{line-height:1.45}
+.jump{font-size:14.5px; color:var(--focus); text-decoration:underline; background:none; border:0; padding:8px 0}
+
+/* ---------- done ---------- */
+.startblock{
+  margin:26px 0 0; padding:22px 24px; border:2px solid var(--accent); border-radius:var(--radius);
+  background:var(--panel); display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+  justify-content:space-between;
+}
+.startblock h3{font-size:19px}
+@media(max-width:640px){.startblock{padding:16px; margin-top:18px} .startblock .btn-big{width:100%}}
+.done-hero{text-align:center; padding:10px 0 2px}
+.done-hero .tickwrap{
+  width:58px; height:58px; border-radius:50%; background:var(--good); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
+  font-size:31px; font-weight:700; animation:popin 460ms var(--ease);
+}
+@keyframes popin{from{transform:scale(.4); opacity:0}to{transform:scale(1); opacity:1}}
+.done-actions{display:flex; gap:14px; flex-wrap:wrap; margin:20px 0 0}
+#confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden}
+#confetti b{position:absolute; width:9px; height:15px; border-radius:1px; animation:fall linear forwards}
+@keyframes fall{
+  from{transform:translateY(-15vh) rotate(0deg); opacity:1}
+  to{transform:translateY(106vh) rotate(700deg); opacity:.9}
+}
+
+/* ---------- summary card ---------- */
+.card{border:2px solid var(--ink); border-radius:var(--radius); padding:22px; margin:16px 0}
+.card h3{margin-top:0; font-size:20px}
+.card .para{font-size:16.5px; line-height:1.6; margin:0 0 12px; max-width:78ch}
+.card dt{font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:14px}
+.card dd{margin:3px 0 0}
+
+/* ---------- nav ---------- */
+.nav{position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--line); padding:9px 0; z-index:40}
+.nav-in{max-width:1060px; margin:0 auto; padding:0 18px; display:flex; gap:12px; align-items:center}
+.nav .hint{font-size:14px; color:var(--ink-soft); flex:1}
+.hidden{display:none !important}
+.sr{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
+    clip:rect(0 0 0 0); white-space:nowrap; border:0}
+.fade{animation:fade var(--t-mid) var(--ease)}
+@keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+.rise{animation:rise var(--t-slow) var(--ease)}
+@keyframes rise{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+
+.only-wide{display:block} .only-narrow{display:none}
+@media(max-width:700px){.only-wide{display:none} .only-narrow{display:block}}
+
+@media(max-width:640px){
+  .plot,.yaxis{height:134px}
+  .plot.sm,.yaxis.sm{height:92px}
+  .duo{gap:12px}
+  #fb2{font-size:14.5px}
+  #fb2 > div{font-size:16px !important}
+  .chart-head{margin-bottom:7px}
+  .axis-note{margin-top:3px; font-size:12.5px}
+  .xaxis{margin-top:4px}
+  .pips{margin-top:6px}
+  .ctrl > .lbl{margin-bottom:5px}
+  .seg button{padding:9px 12px}
+  .task .sub{margin-top:3px}
+  .mini .plot,.mini .yaxis{height:92px}
+  .slot{min-height:58px; padding:9px 11px; font-size:15px}
+  h2{font-size:22px; margin-top:18px}
+  .task{padding:11px 13px; margin:13px 0 11px}
+  .task .q{font-size:16px}
+  .panel{padding:12px 13px}
+  .col .val{font-size:11px; top:5px}
+  .doc{padding:16px 15px}
+  .doc p{font-size:16px}
+  .split{gap:16px}
+  .split.ref > .sticky-col{order:-1}
+  .ctrl{margin-bottom:10px}
+  .top-in{padding:8px 16px}
+  .top h1{font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .steps .lbl{display:none}
+  .wrap{padding:0 14px 104px}
+}
+
+@media(max-width:400px){
+  .plotwrap{gap:5px}
+  .yaxis{width:30px; font-size:10.5px}
+  .xaxis{margin-left:35px; gap:3px}
+  .plot{gap:3px}
+  .axis-note{margin-left:35px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:1ms !important; animation-iteration-count:1 !important;
+                       transition-duration:1ms !important; scroll-behavior:auto !important}
+  .mcard[aria-pressed="true"]{transform:none}
+  #confetti{display:none}
+}
+
+/* ---------- Design Lens: a reviewer feature, off by default ---------- */
+.lensbtn{
+  flex:0 0 auto; margin-left:12px; background:none; border:1px solid transparent; border-radius:var(--radius);
+  padding:5px 7px; line-height:0; color:var(--ink-faint); cursor:pointer;
+  transition:color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.lensbtn:hover{color:var(--accent); border-color:var(--line)}
+.lensbtn[aria-pressed="true"]{color:var(--lens); border-color:var(--lens); background:var(--lens-bg)}
+.lensbtn svg{display:block}
+.lensbar{background:var(--lens-bg); border-top:1px solid var(--lens-line); padding:9px 0}
+.lensbar-in{
+  max-width:1060px; margin:0 auto; padding:0 18px; display:flex; gap:12px; align-items:baseline;
+  flex-wrap:wrap; font-size:13.5px; color:var(--lens-ink);
+}
+.lensbar b{font-weight:700}
+.lensbar button{
+  margin-left:auto; background:#fff; border:1px solid var(--lens-line); color:var(--lens-ink);
+  border-radius:var(--radius); padding:6px 12px; font-size:13.5px; min-height:36px;
+}
+body.lens [data-lens].lens-on{outline:3px solid var(--lens); outline-offset:3px; border-radius:4px}
+.lensmark{
+  position:absolute; top:-11px; right:-11px; z-index:20; width:26px; height:26px; border-radius:50%;
+  background:var(--lens); color:#fff; border:2px solid var(--bg); padding:0; line-height:0;
+  display:flex; align-items:center; justify-content:center; cursor:help;
+}
+.lensmark svg{width:14px; height:14px; display:block}
+.lenspop{
+  position:fixed; z-index:60; right:18px; width:340px; background:var(--bg); color:var(--ink);
+  border:2px solid var(--lens); border-radius:var(--radius); padding:13px 15px;
+  box-shadow:0 10px 30px rgba(22,25,29,.22); font-size:14.5px; line-height:1.5;
+}
+.lenspop h4{margin:0 0 5px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--lens-ink)}
+.lenspop p{margin:0}
+@media(max-width:700px){ .lenspop{left:12px; right:12px; width:auto} }
+@media print{
+  header.top,.nav,.noprint,#confetti,.lensbar,.lenspop,.lensmark{display:none !important}
+  [data-lens]{outline:none !important}
+  body{font-size:12pt}
+  .wrap{padding:0; max-width:none}
+  .card{border:1px solid #000; break-inside:avoid}
+  /* The card can be taller than a page, so it must split. Keep each term with
+     its own text rather than orphaning a heading at the foot of a page. */
+  .card dt{break-after:avoid}
+  .card dd,.card .para{break-inside:avoid}
+  .tablewrap{break-inside:avoid}
+  h3{break-after:avoid}
+  tr{break-inside:avoid}
+  thead{display:table-header-group}
+  details{display:block} details summary{display:none}
+  .only-narrow{display:none !important} .only-wide{display:block !important}
+  a[href]:after{content:""}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <h1>Line&nbsp;3: Reading the Weekly Numbers</h1>
+    <div class="steps" id="steps" role="img" aria-label="Progress"></div>
+    <button type="button" class="lensbtn noprint" id="lensBtn" aria-pressed="false"
+            title="Design Lens: why this was built this way"
+            aria-label="Design Lens. Show the reasons behind the design.">
+      <svg width="24" height="16" viewBox="0 0 34 16" fill="none" stroke="currentColor"
+           stroke-width="1.8" aria-hidden="true">
+        <circle cx="8" cy="9" r="5.6"/><circle cx="26" cy="9" r="5.6"/>
+        <path d="M13.6 8.2c1.5-1.2 5.3-1.2 6.8 0"/><path d="M2.4 9C1.6 6.4 1.6 4.6 2.4 2.6"/>
+        <path d="M31.6 9c.8-2.6.8-4.4 0-6.4"/>
+      </svg>
+    </button>
+  </div>
+  <div class="lensbar noprint hidden" id="lensBar">
+    <div class="lensbar-in">
+      <span><b>Design Lens is on.</b> Hover over or select a marked area to see why it was built that
+        way. These explanations were written with AI from the developer's own notes and development
+        discussions, so they may not capture every decision made along the way.</span>
+      <button type="button" id="lensOff">Turn off</button>
+    </div>
+  </div>
+</header>
+
+
+<main class="wrap" id="main"></main>
+
+<div class="lenspop noprint hidden" id="lenspop" role="note" aria-live="polite"></div>
+
+<!-- Persistent live region. #main is replaced wholesale on every redraw, and a
+     freshly inserted region that already contains text is not announced, so the
+     spoken copy of each piece of feedback is written here instead. -->
+<div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="confetti" class="noprint" aria-hidden="true"></div>
+
+<div class="nav noprint">
+  <div class="nav-in">
+    <button class="btn btn-sec" id="backBtn">Back</button>
+    <span class="hint" id="navHint"></span>
+    <button class="btn" id="nextBtn">Start</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   DATA. Exactly as supplied in the brief, and the only source
+   of truth: every chart, table, sentence and figure reads it.
+   ============================================================ */
+const TARGET = 5000;
+const DATA = [
+  { w:1,  units:4820, dt:14, fc:22, scrap:2.1 },
+  { w:2,  units:4910, dt:12, fc:19, scrap:2.0 },
+  { w:3,  units:4870, dt:13, fc:21, scrap:2.2 },
+  { w:4,  units:4950, dt:11, fc:18, scrap:1.9 },
+  { w:5,  units:4780, dt:16, fc:25, scrap:2.4 },
+  { w:6,  units:4990, dt:10, fc:17, scrap:1.8 },
+  { w:7,  units:3650, dt:38, fc:41, scrap:3.9 },
+  { w:8,  units:4880, dt:12, fc:20, scrap:2.1 },
+  { w:9,  units:4930, dt:11, fc:16, scrap:2.0 },
+  { w:10, units:5120, dt:9,  fc:15, scrap:1.9 },
+  { w:11, units:5080, dt:8,  fc:14, scrap:2.3 },
+  { w:12, units:5150, dt:8,  fc:13, scrap:2.6 }
+];
+const SUP_NOTES = {
+  7:  "Week 7: severe storm. The site lost power for part of the week.",
+  10: "Week 10: Saturday overtime shifts began. Fault calls are now logged on a new form."
+};
+
+const wk = n => DATA[n-1];
+const gap = n => TARGET - wk(n).units;
+const parts = n => Math.round(wk(n).units * wk(n).scrap / 100);
+const num = v => v.toLocaleString('en-AU');
+const sum = a => a.reduce((x,y)=>x+y,0);
+
+/* Derived figures, computed rather than typed, so they cannot drift from the data. */
+const MEAN_ALL = sum(DATA.map(d=>d.units)) / DATA.length;               // 4844.17
+const MEAN_NO7 = sum(DATA.filter(d=>d.w!==7).map(d=>d.units)) / 11;     // 4952.73
+// Twelve values, so the median is halfway between the sixth and seventh once
+// sorted. Both middle figures are kept, because the explanation names them.
+const SORTED_UNITS = DATA.map(d=>d.units).sort((a,b)=>a-b);
+const MED_LO   = SORTED_UNITS[5];                                      // 4910
+const MED_HI   = SORTED_UNITS[6];                                      // 4930
+const MEDIAN   = (MED_LO + MED_HI) / 2;                                // 4920
+
+const MEAS = {
+  units:  { title:"Units produced", short:"Units", dir:"Higher is better", top:5500,
+            ticks:[0,1000,2000,3000,4000,5000], val:d=>d.units, fmt:v=>num(v)+" units",
+            vshort:v=>num(v), target:TARGET },
+  dt:     { title:"Downtime (hours)", short:"Downtime", dir:"Lower is better", top:40,
+            ticks:[0,10,20,30,40], val:d=>d.dt, fmt:v=>v+" hours", vshort:v=>v+"h" },
+  fc:     { title:"Fault calls logged", short:"Fault calls", dir:"Lower is better", top:45,
+            ticks:[0,15,30,45], val:d=>d.fc, fmt:v=>v+" calls", vshort:v=>String(v) },
+  scrap:  { title:"Scrap percentage, as recorded on the sheet", short:"Scrap %", dir:"Lower is better", top:4.5,
+            ticks:[0,1,2,3,4], val:d=>d.scrap, fmt:v=>v.toFixed(1)+"%", vshort:v=>v.toFixed(1)+"%" },
+  sparts: { title:"Estimated scrap parts", short:"Estimated parts", dir:"Lower is better",
+            top:160, ticks:[0,40,80,120,160], val:d=>Math.round(d.units*d.scrap/100),
+            fmt:v=>"an estimated "+v+" parts", vshort:v=>String(v) }
+};
+const TICKS_4600 = [4600,4800,5000,5200];
+const RANGES = { all:[1,2,3,4,5,6,7,8,9,10,11,12], early:[1,2,3,4,5,6,7], late:[8,9,10,11,12] };
+const W7 = [1,2,3,4,5,6,7];
+
+/* ============================================================
+   STATE. Nothing is persisted: shared machines, short session.
+   ============================================================ */
+const S = {
+  stage: 0,
+  s1: { picked:null, solved:{}, wrong:0, fb:null, just:null },
+  s2: { measure:"units", seen:["units"], week:null, committed:false, noteRead:false, answer:null },
+  s3: { chal:1, base:0, range:"all", trouble:false, success:false },
+  s4: { view:"honest", seen:["honest"] },
+  s5: { incl7:true, sawExcluded:false },
+  s6: { cols:[], last:null, noteRead:false },
+  s7: { pick:null, picked:[] },
+  s8: { a:"", b:"", c:"", nudged:false, skip:false }
+};
+
+/* ============================================================
+   CHART. Columns are real <button>s only where clicking one
+   does something; otherwise plain divs, so no focusable control
+   is ever inert. The hit area is the whole column, so a short
+   bar is still an easy target.
+   ============================================================ */
+let LAST_ANIM = {};
+function chart(o){
+  const m = MEAS[o.measure];
+  const weeks = o.weeks;
+  const base = o.base || 0;
+  const top  = base ? 5300 : m.top;
+  const span = top - base;
+  const ticks = base ? TICKS_4600 : m.ticks;
+  const sm = o.size === "sm";
+  const inert = o.mini || o.static;
+  // A value on every bar breaks the usual rule, but from a zero baseline six
+  // weeks within 4% of each other are the same height, and the learner is being
+  // asked which is lowest. Labels only where they fit; tooltips carry the rest.
+  const showVals = o.labels && !o.mini && base === 0 && weeks.length <= 7;
+  const pos = v => ((v - base) / span) * 100;
+  const id = o.id || "plot";
+
+  // Replay the grow animation only when the data behind the chart actually
+  // changes, not on every unrelated redraw of the panel.
+  const key = [o.measure, base, weeks.join(","), o.unitKey||""].join("|");
+  const changed = LAST_ANIM[id] !== key;
+  LAST_ANIM[id] = key;
+
+  const cols = weeks.map((n,i)=>{
+    const d = wk(n), v = m.val(d);
+    const below = v < base;                        // only week 7 ever falls below
+    const h = Math.max(1.5, pos(v));
+    const label = `Week ${n}, ${m.fmt(v)}`
+      + (m.target ? `, target ${num(m.target)}` : "")
+      + (below ? ", which is below the bottom of this chart" : "");
+    const cls = [
+      o.matched && o.matched[n] ? "matched" : "",
+      o.dim && o.dim.includes(n) ? "dim" : "",
+      o.hot && o.hot.includes(n) ? "hot" : ""
+    ].filter(Boolean).join(" ");
+    const vl = showVals ? `<span class="val">${m.vshort(v)}</span>` : "";
+    const pop = o.pop === n ? " pop" : "";
+    const delay = changed && !inert ? ` style="height:${h}%;animation-delay:${Math.min(i*22,260)}ms"`
+                                    : ` style="height:${h}%"`;
+    const bar = `<span class="bar${below?" clipped":""}${pop}"${delay}>${vl}</span>`;
+    if (inert) return `<div class="col ${cls}">${bar}</div>`;
+    return `<button type="button" class="col ${cls}" data-week="${n}"
+      aria-pressed="${o.selected===n}" aria-label="${label}"
+      data-tip="Week ${n}: ${m.fmt(v)}">${bar}</button>`;
+  }).join("");
+
+  const grid = ticks.filter(t=>t>base).map(t=>`<div class="grid" style="bottom:${pos(t)}%"></div>`).join("");
+  const yax = o.mini ? "" : `<div class="yaxis${sm?" sm":""}" aria-hidden="true">${
+    ticks.map(t=>`<span style="bottom:calc(${pos(t)}% - 6px)">${(m.top>100||base)?num(t):t}</span>`).join("")}</div>`;
+  const tline = (m.target && m.target > base && !o.noTarget)
+    ? `<div class="targetline" style="bottom:${pos(m.target)}%"></div>` : "";
+  const mline = o.mean
+    ? `<div class="meanline" style="bottom:${pos(o.mean)}%"><b>${num(Math.round(o.mean))}</b></div>` : "";
+  const axis = weeks.map(n=>{
+    const b = o.matched && o.matched[n];
+    return `<span class="${(o.selected===n||(o.hot&&o.hot.includes(n)))?"on":""}">${n}${
+      b ? `<b class="${b.ex?"ex":""}"><span class="bl">${b.t}</span><span class="bs">${b.s}</span></b>` : ""}</span>`;
+  }).join("");
+  const capW = weeks.length <= 7 ? weeks.length*74 : 0;
+  const w  = capW ? ` style="max-width:${capW}px"` : "";
+  const xw = capW ? ` style="max-width:${capW}px${o.mini?";margin-left:0":""}"` : (o.mini ? ' style="margin-left:0"' : "");
+
+  return `<div class="chart${o.mini?" mini":""}">
+    <div class="chart-head">
+      <span class="chart-title">${o.title || m.title}</span>
+      <span class="chart-dir">${m.dir}</span>
+      ${o.mean ? `<span class="legend-t legend-m"><i></i>Average ${num(Math.round(o.mean))}</span>` : ""}
+      ${tline && !o.mean ? `<span class="legend-t"><i></i>Target ${num(m.target)}</span>` : ""}
+    </div>
+    <div class="plotwrap">${yax}<div class="plot${sm?" sm":""}${o.picking?" picking":""}${changed&&!inert?" grow":""}"
+      id="${id}"${w}>${grid}${tline}${mline}${cols}</div></div>
+    <div class="xaxis"${xw} aria-hidden="true">${axis}</div>
+    ${o.mini ? "" : `<p class="axis-note">Week number. The bottom of the chart is ${num(base)}.</p>`}
+    ${o.mini || o.noTable ? "" : tableToggle(weeks, o.tableCols || ["units","dt","fc","scrap"], o.selected, o.openTable)}
+  </div>`;
+}
+
+function tableToggle(weeks, cols, hl, open){
+  return `<details class="noprint"${open?" open":""}><summary style="cursor:pointer;font-size:14.5px;color:#0b63ce;padding:7px 0">${
+    open?"Hide the table of numbers":"Show these numbers as a table"}</summary>
+    ${dataTable(weeks, cols, hl)}</details>`;
+}
+
+const COLDEF = {
+  units: { h:"Units produced", f:n=>num(wk(n).units) },
+  target:{ h:"Target",         f:()=>num(TARGET) },
+  dt:    { h:"Downtime (hrs)", f:n=>wk(n).dt },
+  fc:    { h:"Fault calls",    f:n=>wk(n).fc },
+  scrap: { h:"Scrap (%)",      f:n=>wk(n).scrap.toFixed(1) },
+  sparts:{ h:"Estimated scrap parts", f:n=>"about "+parts(n) }
+};
+
+function dataTable(weeks, cols, hl, opt){
+  opt = opt || {};
+  const head = `<tr><th scope="col">Week</th>${cols.map(c=>`<th scope="col">${COLDEF[c].h}</th>`).join("")}</tr>`;
+  const rows = weeks.map(n=>{
+    const cls = [hl===n?"hl":"", opt.divider===n?"divider":""].filter(Boolean).join(" ");
+    return `<tr class="${cls}"><th scope="row">${n}</th>${cols.map(c=>{
+      const fresh = opt.fresh===c ? " fresh" : "";
+      const trend = (opt.trend && opt.trend[c]) ? opt.trend[c](n) : "";
+      return `<td class="${fresh}${trend?" "+trend:""}">${COLDEF[c].f(n)}${
+        trend ? ARROW[trend] : ""}</td>`;
+    }).join("")}</tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table>${opt.caption ? `<caption>${opt.caption}</caption>` : ""}
+    <thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+const ARROW = { down:'<span class="arrow" aria-hidden="true">&#9660;</span>',
+                up:'<span class="arrow" aria-hidden="true">&#9650;</span>' };
+
+/* ---------- helpers ---------- */
+const el = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const narrow = () => window.matchMedia("(max-width:879px)").matches;
+
+function bringIntoView(sel){
+  if (!narrow()) return;
+  const n = document.querySelector(sel); if (!n) return;
+  const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  n.scrollIntoView({behavior: smooth ? "smooth" : "auto", block:"center"});
+}
+
+/* Speak a piece of feedback. Cleared first so repeating a message still fires. */
+function announce(msg){
+  const n = el("live"); if (!n) return;
+  const SPOKEN = { "&minus;":" minus ", "&ndash;":" to ", "&rsquo;":"'", "&ldquo;":'"',
+                   "&rdquo;":'"', "&amp;":" and ", "&nbsp;":" ", "&middot;":", ",
+                   "&times;":" times ", "&hellip;":"…", "&#10003;":"", "&#9660;":"", "&#9650;":"" };
+  const text = String(msg).replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/g, m => (m in SPOKEN ? SPOKEN[m] : " "))
+    .replace(/\s+/g, " ").trim();
+  n.textContent = "";
+  setTimeout(()=>{ n.textContent = text; }, 60);
+}
+
+/* draw() replaces #main, which drops focus to <body>. Without this a keyboard
+   user returns to the top of the document after every click. Keys are scoped by
+   chart id, because two charts on one screen share week numbers. */
+function focusKey(e){
+  if (!e || e === document.body || !e.dataset) return null;
+  if (e.id) return "#" + e.id;
+  const keys = Object.keys(e.dataset).filter(k=>k!=="tip");
+  if (!keys.length) return null;
+  const sel = keys.map(k=>`[data-${k}="${e.dataset[k].replace(/"/g,'&quot;')}"]`).join("");
+  const plot = e.closest && e.closest(".plot[id]");
+  return plot ? `#${plot.id} ${sel}` : sel;
+}
+function restoreFocus(key){
+  if (!key) return;
+  const t = document.querySelector(key);
+  if (t && !t.disabled){ t.focus(); return; }
+  const nextOfKind = key.includes("[data-card") ? ".mcard:not([disabled])"
+                   : key.includes("[data-col")  ? "[data-col]:not([disabled])" : null;
+  const n = nextOfKind && document.querySelector(nextOfKind);
+  if (n){ n.focus(); return; }
+  focusTop();
+}
+function focusTop(){
+  const h = document.querySelector("#main h2");
+  if (h){ h.setAttribute("tabindex","-1"); h.focus(); }
+}
+
+/* A table that scrolls sideways needs to say so, and needs to be reachable by
+   keyboard. Only the ones that actually overflow are marked. */
+function markScrollables(){
+  document.querySelectorAll("#main .tablewrap").forEach(w=>{
+    const overflows = w.scrollWidth > w.clientWidth + 1;
+    const hint = w.previousElementSibling;
+    if (hint && hint.classList && hint.classList.contains("scrollhint")) hint.remove();
+    if (!overflows){ w.removeAttribute("tabindex"); w.removeAttribute("role"); w.removeAttribute("aria-label"); return; }
+    w.setAttribute("tabindex","0");
+    w.setAttribute("role","region");
+    w.setAttribute("aria-label","Table, scrolls sideways for the remaining columns");
+    const p = document.createElement("p");
+    p.className = "tiny scrollhint";
+    p.textContent = "Scroll this table sideways to see the rest of the columns.";
+    w.parentNode.insertBefore(p, w);
+  });
+}
+
+/* Labels carry charts of seven bars or fewer; tooltips carry the twelve-bar ones. */
+function wireTips(){
+  document.querySelectorAll(".plot").forEach(plot=>{
+    let tip = null;
+    const show = b => {
+      if (!b.dataset.tip) return;
+      if (!tip){ tip = document.createElement("div"); tip.className = "tip"; plot.appendChild(tip); }
+      tip.textContent = b.dataset.tip;
+      const barTop = b.offsetHeight - b.querySelector(".bar").offsetHeight;
+      const tight = barTop < 26;
+      tip.classList.toggle("below", tight);
+      tip.style.left = "0px";
+      // Measure, then keep the tooltip inside the plot. On the last bar of a
+      // twelve bar chart it otherwise hangs well past the right-hand edge.
+      const half = tip.offsetWidth / 2;
+      const want = b.offsetLeft + b.offsetWidth/2;
+      const maxL = Math.max(half, plot.clientWidth - half);
+      tip.style.left = Math.round(Math.min(Math.max(want, half), maxL)) + "px";
+      tip.style.top  = (tight ? barTop + 5 : barTop - 6) + "px";
+      tip.classList.add("on");
+    };
+    const hide = ()=>{ if (tip) tip.classList.remove("on"); };
+    plot.querySelectorAll(".col[data-week]").forEach(b=>{
+      b.addEventListener("mouseenter", ()=>show(b));
+      b.addEventListener("focus", ()=>show(b));
+      b.addEventListener("mouseleave", hide);
+      b.addEventListener("blur", hide);
+    });
+  });
+}
+
+const ST = [];
+
+/* ============================================================
+   0. The sheet
+   ============================================================ */
+ST[0] = {
+  label:"Welcome", next:"Start the activity", hideNav:true,
+  render:()=>`
+    <h2>Reading the weekly numbers on Line 3</h2>
+    <p class="lede">A short activity for anyone who reads the weekly production sheet at Ridgeway
+       Components. No experience with charts or spreadsheets is needed.</p>
+    <div class="split" style="margin-top:20px">
+      <div>
+        <div class="panel flush">
+          <h3>What this is about</h3>
+          <p class="small" style="margin:0">Every Monday your supervisor puts a summary of Line 3's
+             numbers on the noticeboard and sends it round in the team email. It looks simple, and most
+             of the time it is. Occasionally it gives an impression that the figures underneath do not
+             quite support.</p>
+          <p class="small" style="margin:9px 0 0">This activity uses 12 weeks of example figures from
+             that sheet. You will read them, work out what they are telling you, and work out what they
+             are not.</p>
+        </div>
+        <div class="panel">
+          <h3>What you should get out of it</h3>
+          <p class="small" style="margin:0">By the end you should be able to read a sheet like this and
+             say in plain words what it shows, spot several ways a table or a chart can give the wrong
+             impression, and decide what you would ask before acting on the numbers.</p>
+        </div>
+      </div>
+      <div>
+        <div class="panel flush">
+          <h3>What you will do</h3>
+          <ol class="small" style="margin:0 0 0 18px; padding:0">
+            <li style="margin-bottom:5px">Match short notes from the line to the weeks they describe.</li>
+            <li style="margin-bottom:5px">Investigate a week that looks wrong and decide whether to raise it.</li>
+            <li style="margin-bottom:5px">Build two charts that tell opposite stories from the same figures.</li>
+            <li style="margin-bottom:5px">Work out which questions the sheet cannot answer.</li>
+            <li>Write a short note for the Monday team meeting, which you can print.</li>
+          </ol>
+        </div>
+        <div class="panel">
+          <h3>Before you begin</h3>
+          <p class="small" style="margin:0"><strong>About 15 to 20 minutes</strong>, across ten short
+             steps. You can return to earlier steps using the Back button. Your progress won't be saved if you close the activity.</p>
+          <p class="small" style="margin:9px 0 0"><strong>Nothing is scored, marked or saved.</strong>
+             Most of it has no single right answer, and nothing you type is sent anywhere.</p>
+        </div>
+      </div>
+    </div>
+    <div class="startblock">
+      <div>
+        <h3 style="margin:0 0 3px">Ready to begin?</h3>
+        <p class="small muted" style="margin:0">Step 1 shows you the first six weeks of the sheet.</p>
+      </div>
+      <button type="button" class="btn btn-big" id="startBtn" style="flex:0 0 auto">Start the activity</button>
+    </div>`,
+  bind:()=>{
+    const b = el("startBtn");
+    if (b) b.onclick = ()=>{ S.stage = 1; gotoStage(); };
+  },
+  ok:()=>true
+};
+
+/* ============================================================
+   1. Matching notes to weeks
+   ============================================================ */
+const CARDS = [
+  { id:"a", tag:"Note A", week:1, text:"We finished 180 short of target.",
+    yes:"Week 1 produced 4,820. The target is 5,000, so the line finished 180 units short.",
+    no: n=>`Week ${n} produced ${num(wk(n).units)}, which is ${num(gap(n))} short of 5,000 rather than 180.` },
+  { id:"b", tag:"Note B", week:5, text:"Our lowest week so far, and the line was down the longest.",
+    yes:"Week 5 produced 4,780, the lowest of the six, with 16 hours of downtime, the highest of the six.",
+    no: n=>`Week ${n} produced ${num(wk(n).units)} with ${wk(n).dt} hours of downtime. Look for the week with the fewest units that also had the most downtime.` },
+  { id:"c", tag:"Note C", week:6, text:"Our best week so far. Only 10 short of target, and the least scrap.",
+    yes:"Week 6 produced 4,990, just 10 short of target, with 1.8% scrap, the lowest of the six.",
+    no: n=>`Week ${n} produced ${num(wk(n).units)}, which is ${num(gap(n))} short, with ${wk(n).scrap.toFixed(1)}% scrap. Look for the week closest to target that also scrapped the least.` }
+];
+
+ST[1] = {
+  label:"Reading the sheet", next:"Continue",
+  render:()=>{
+    const s = S.s1, done = Object.keys(s.solved).length;
+    const matched = { 3:{t:"Example", s:"Ex", ex:true} };
+    CARDS.forEach(c=>{ if (s.solved[c.id]) matched[c.week] = {t:c.tag, s:c.tag.replace("Note ","")}; });
+    const picked = s.picked && CARDS.find(c=>c.id===s.picked);
+    return `
+    <h2>Reading the sheet</h2>
+    <p class="lede">Here are the first six weeks of the quarter. Each of the notes below describes one
+       of them, and the numbers are the only way to tell which.</p>
+    <div class="task${done===3?" done":""}${s.just?" turn":""}">
+      <span class="n">${done===3?"Completed":"Your task"}</span>
+      <div>
+        <p class="q">${done===3
+          ? "You have matched all three notes."
+          : picked
+            ? `Select the week that ${picked.tag} describes.`
+            : "Select a note, then select the week it describes."}</p>
+        <p class="sub">${done===3
+          ? "A single figure means very little on its own. It only becomes useful next to the target, or next to the other weeks."
+          : `${3-done} of 3 remaining. The first one has been completed as an example.`}</p>
+      </div>
+    </div>
+    <div class="split wide-left">
+      <div>
+        <div class="cards" id="cards">
+          <div class="mcard done example">
+            <span class="tag">Example</span>
+            <span><strong>&ldquo;We finished 130 short, and the line was down 13 hours.&rdquo;</strong>
+              <span class="tiny" style="display:block;margin-top:4px">Worked example, done for you.
+              This is week 3, marked on the chart. The target is 5,000 and week 3 produced 4,870, which
+              is 130 short. The downtime column shows 13 hours. Both halves of the note match.</span></span>
+          </div>
+          ${CARDS.map(c=>{
+            const solved = s.solved[c.id];
+            return `<button type="button" class="mcard${solved?" done":""}${s.just===c.id?" just":""}"
+              data-card="${c.id}" ${solved?'disabled':''} aria-pressed="${s.picked===c.id}">
+              <span class="tag">${solved?"Week "+c.week:c.tag}</span>
+              <span>${c.text}</span></button>`;}).join("")}
+        </div>
+      </div>
+      <div class="sticky-col">
+        ${chart({measure:"units", weeks:[1,2,3,4,5,6], labels:true, matched, picking:!!s.picked,
+                 pop:s.just ? CARDS.find(c=>c.id===s.just).week : null, noTable:true})}
+        <div class="slot ${s.fb?s.fb.k:""}" id="fb"
+             data-empty="${s.picked?"Select a week on the chart above.":"Feedback will appear here once you make a selection."}">${s.fb?s.fb.t:""}</div>
+      </div>
+    </div>
+    <h3 style="margin-top:22px">The sheet, weeks 1 to 6</h3>
+    ${dataTable([1,2,3,4,5,6], ["units","target","dt","fc","scrap"], null,
+      {caption:"The notes mention downtime and scrap as well as units, so you will need these columns."})}`;
+  },
+  bind:()=>{
+    wireTips();
+    S.s1.just = null;
+    const set = (k,t)=>{ S.s1.fb = {k,t}; draw(); bringIntoView("#fb"); announce(t); };
+    document.querySelectorAll("[data-card]").forEach(b=>b.onclick=()=>{
+      S.s1.picked = S.s1.picked===b.dataset.card ? null : b.dataset.card;
+      S.s1.fb = null; draw();
+      if (S.s1.picked) bringIntoView(".plot");
+      announce(S.s1.picked
+        ? `${CARDS.find(c=>c.id===S.s1.picked).tag} selected. Now choose the week it describes.`
+        : "Note cleared.");
+    });
+    document.querySelectorAll(".col[data-week]").forEach(b=>b.onclick=()=>{
+      const n = +b.dataset.week;
+      if (!S.s1.picked){
+        set("", `Week ${n} produced ${num(wk(n).units)} units, which is ${num(gap(n))} short of target.
+                 To match a note, select one on the left first.`);
+        return;
+      }
+      const c = CARDS.find(x=>x.id===S.s1.picked);
+      if (c.week===n){
+        S.s1.solved[c.id] = true; S.s1.picked = null; S.s1.just = c.id;
+        set("ok", `<span class="k">Correct.</span> ${c.yes}`);
+      } else {
+        S.s1.wrong++;
+        const hint = S.s1.wrong>=3
+          ? ` <span class="muted">You may find it easier to compare the columns in the table below the chart.</span>` : "";
+        set("no", `<span class="k">Not this one.</span> ${c.no(n)}${hint}`);
+      }
+      refreshNav();
+    });
+  },
+  ok:()=>Object.keys(S.s1.solved).length===3,
+  hint:()=>`${3-Object.keys(S.s1.solved).length} of 3 notes still to match`
+};
+
+/* ============================================================
+   2. Investigating week 7. The learner explores every measure
+      and commits to a week before anything is explained.
+   ============================================================ */
+const MKEYS = ["units","dt","fc","scrap"];
+
+function ranked(k){
+  const m = MEAS[k], better = k==="units" ? 1 : -1;
+  return W7.slice().sort((a,b)=> better*(m.val(wk(a)) - m.val(wk(b))));
+}
+function rankTable(){
+  return `<div class="tablewrap"><table>
+    <caption>Each measure, ranked from the worst week to the best across weeks 1 to 7.</caption>
+    <thead><tr><th scope="col">Measure</th><th scope="col">Worst week</th>
+      <th scope="col">Second worst</th><th scope="col">Third worst</th><th scope="col">Best week</th></tr></thead>
+    <tbody>${MKEYS.map(k=>{
+      const m = MEAS[k], r = ranked(k);
+      const cell = i => `Week ${r[i]} <span class="muted">(${m.fmt(m.val(wk(r[i])))})</span>`;
+      return `<tr><th scope="row">${m.short}</th><td>${cell(0)}</td><td>${cell(1)}</td>
+        <td>${cell(2)}</td><td>${cell(6)}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+}
+
+function w2feedback(n){
+  if (n===7) return `<span class="k">You selected week 7.</span> Worth asking what made it stand out,
+    because week 5 is second worst on every measure too.`;
+  if (n===5) return `<span class="k">You selected week 5.</span> A reasonable choice: it is second worst
+    on every one of the four measures.`;
+  return `<span class="k">You selected week ${n}.</span> It produced ${num(wk(n).units)} units with
+    ${wk(n).dt} hours of downtime.`;
+}
+
+ST[2] = {
+  label:"Finding the odd week", next:"Continue",
+  render:()=>{
+    const s = S.s2;
+    const explored = s.seen.length >= 4;
+    const phase = !explored ? "explore" : (!s.committed ? "commit" : (!s.noteRead ? "note" : "decide"));
+    const copy = {
+      explore: ["Your task", "Look at all four measures and see which weeks stand out.",
+                `Use the buttons to switch the chart. You have viewed ${s.seen.length} of the 4 measures.`],
+      commit:  ["Next step", "Now select the week you would raise with your supervisor.",
+                "Choose it on the chart, based on everything you have just looked at."],
+      note:    ["Next step", "Your supervisor has left a note about week 7.",
+                "Read the note, then decide what you would do."],
+      decide:  ["Final step", "Would you raise week 7 with your supervisor?",
+                "There is no single correct answer here. Choose the one that matches your view."]
+    }[phase];
+    const hot = s.committed ? [...new Set([5,7,s.week])] : [];
+    const dim = s.committed ? W7.filter(x=>!hot.includes(x)) : [];
+    return `
+    <h2>Finding the week that stands out</h2>
+    <p class="lede">Week 7 has been added to the sheet. The chart below shows weeks 1 to 7, and you can
+       switch it between the four things the sheet measures.</p>
+    <div class="task${phase==="decide"&&s.answer?" done":""}${phase==="commit"?" turn":""}">
+      <span class="n">${copy[0]}</span>
+      <div><p class="q">${copy[1]}</p><p class="sub">${copy[2]}</p></div>
+    </div>
+    <div class="ctrl">
+      <span class="lbl" id="mlbl">Show the chart as</span>
+      <div class="seg" role="group" aria-labelledby="mlbl">
+        ${MKEYS.map(k=>`<button type="button" data-meas="${k}" aria-pressed="${s.measure===k}">${MEAS[k].short}</button>`).join("")}
+      </div>
+      <p class="pips">${MKEYS.map(k=>`<i class="${s.seen.includes(k)?"on":""}" aria-hidden="true"></i>`).join("")}
+        <span>${s.seen.length} of 4 measures viewed</span></p>
+    </div>
+    ${chart({measure:s.measure, weeks:W7, labels:true, selected:s.week, hot, dim,
+             picking:explored && !s.committed, tableCols:["units","target","dt","fc","scrap"]})}
+    <div class="slot ${s.committed?"ok":""}" id="fb"
+         data-empty="${explored?"Select a week on the chart to continue.":"Switch between the four measures and watch which weeks move."}">${
+      s.committed ? w2feedback(s.week) : ""}</div>
+    ${s.committed ? `
+    <div class="rise">
+      <h3 style="margin-top:22px">How the weeks rank on each measure</h3>
+      ${rankTable()}
+      <div class="panel takeaway">
+        <p class="small" style="margin:0">Weeks 7 and 5 are the bottom two on all four measures. A
+           ranking tells you the order, but not how far apart the weeks are. Week 5 produced
+           ${num(wk(1).units-wk(5).units)} units fewer than week 1, while week 7 produced
+           ${num(wk(5).units-wk(7).units)} fewer than week 5.</p>
+      </div>
+    </div>` : ""}
+    ${s.committed && !s.noteRead ? `
+      <p style="margin:14px 0 0"><button type="button" class="btn btn-sec" id="noteBtn">Read the supervisor's note about week 7</button></p>` : ""}
+    ${s.noteRead ? `
+      <div class="panel note-card fade"><h3><span class="pre">From the supervisor</span>Note for week 7</h3>
+        <p class="small" style="margin:0">${SUP_NOTES[7]}</p></div>
+      <div class="ctrl" style="margin-top:14px">
+        <span class="lbl" id="albl">Would you raise week 7 with your supervisor?</span>
+        <div class="seg" role="group" aria-labelledby="albl">
+          <button type="button" data-ans="no" aria-pressed="${s.answer==="no"}">No, I would not raise it for now</button>
+          <button type="button" data-ans="yes" aria-pressed="${s.answer==="yes"}">Yes, I would still ask about it</button>
+        </div>
+      </div>
+      ${s.answer ? `<div class="panel takeaway fade"><p class="small" style="margin:0">
+        Both answers are reasonable. Losing power may help explain why production was lower that week,
+        but the sheet does not show how much of the 1,350 unit shortfall it accounts for, whether it
+        explains the downtime, fault calls and scrap as well, whether anything was damaged, or how likely
+        another power loss is. Context is not the same as a full account.</p></div>` : ""}` : ""}`;
+  },
+  bind:()=>{
+    wireTips();
+    document.querySelectorAll("[data-meas]").forEach(b=>b.onclick=()=>{
+      const k = b.dataset.meas, was = S.s2.seen.length;
+      S.s2.measure = k;
+      if (!S.s2.seen.includes(k)) S.s2.seen.push(k);
+      draw(); refreshNav();
+      const r = ranked(k);
+      const nowReady = was < 4 && S.s2.seen.length === 4;
+      announce(`${MEAS[k].title}. ${MEAS[k].dir}. The worst week is week ${r[0]} at ${MEAS[k].fmt(MEAS[k].val(wk(r[0])))}.`
+        + (nowReady ? " You have now viewed all four measures. Select the week you would raise with your supervisor." : ""));
+    });
+    document.querySelectorAll(".col[data-week]").forEach(b=>b.onclick=()=>{
+      if (S.s2.seen.length < 4){
+        const f = el("fb");
+        if (f) f.textContent = "Please look at all four measures before choosing a week.";
+        announce("Please look at all four measures before choosing a week.");
+        return;
+      }
+      S.s2.week = +b.dataset.week; S.s2.committed = true;
+      draw(); refreshNav(); announce(w2feedback(S.s2.week));
+    });
+    const nb = el("noteBtn");
+    if (nb) nb.onclick = ()=>{ S.s2.noteRead = true; draw(); refreshNav();
+      announce("Note from the supervisor. " + SUP_NOTES[7]); };
+    document.querySelectorAll("[data-ans]").forEach(b=>b.onclick=()=>{
+      S.s2.answer = b.dataset.ans; draw(); refreshNav();
+      const p = document.querySelector(".takeaway.fade");
+      announce(p ? p.textContent : "Answer recorded.");
+    });
+  },
+  ok:()=>!!S.s2.answer,
+  hint:()=>{
+    const s = S.s2;
+    if (s.seen.length<4) return `${4-s.seen.length} more measures to view`;
+    if (!s.committed) return "Select a week on the chart";
+    if (!s.noteRead) return "Read the supervisor's note";
+    return "Choose whether you would raise it";
+  }
+};
+
+/* ============================================================
+   3. Building the two misleading charts, one challenge at a time
+   ============================================================ */
+function s3caption(){
+  const b = S.s3.base, r = S.s3.range, bits = [];
+  if (b) bits.push("<strong>The scale now starts at 4,600.</strong> The bottom of every bar has been cut off, so a difference of 3% can look like half the height.");
+  if (r==="late")  bits.push("<strong>Only 5 of the 12 weeks are shown.</strong> The storm week is not on this chart.");
+  if (r==="early") bits.push("<strong>Only weeks 1 to 7 are shown.</strong> The three weeks that beat target are not on this chart.");
+  if (!bits.length) return "Full scale from zero, with all 12 weeks shown. Nothing is cut off and nothing is left out.";
+  return bits.join(" ");
+}
+
+const CHAL = {
+  1:{ n:"Challenge 1 of 2", doneN:"Challenge 1 complete.",
+      q:"Set the chart so that Line 3 looks like it is in trouble.",
+      sub:"You have two controls. Change one and read what happens underneath the chart.",
+      done:s=>s.base===4600 && s.range==="early",
+      nudge:(b,r)=> b===4600&&r==="all"  ? "You are close. The cut-off scale already makes week 7 look as though the line stopped. Now try removing the weeks that beat target."
+                 : b===4600&&r==="late"  ? "That is the wrong part of the quarter for this one. Try the earlier weeks."
+                 : b===0&&r==="early"    ? "Hiding the stronger weeks helps. From a zero baseline, though, week 7 still reads as one bad week in a steady run. Try changing where the scale starts."
+                 : "Try each control in turn and read the note underneath the chart.",
+      win:"The scale starts at 4,600, so almost none of week 7's bar is drawn, and the three weeks that beat target are not on the chart at all. No figure was altered." },
+  2:{ n:"Challenge 2 of 2", doneN:"Challenge 2 complete.",
+      q:"Now set the same chart so that Line 3 looks like a success story.",
+      sub:"The same two controls, pointed the other way.",
+      done:s=>s.base===4600 && s.range==="late",
+      nudge:(b,r)=> b===4600&&r==="all"  ? "You are close. Now try showing only the last five weeks."
+                 : b===4600&&r==="early" ? "Those weeks will not manage it, because the storm week is among them. Try the later weeks."
+                 : b===0&&r==="late"     ? "The last five weeks do look tidy on their own. From zero, though, beating target by 3% barely shows. Try changing where the scale starts."
+                 : "Try each control in turn and read the note underneath the chart.",
+      win:"From a baseline of 4,600, a 5% difference becomes a bar roughly twice the height, and week 7 is not on the chart at all." }
+};
+
+ST[3] = {
+  label:"Two stories", next:"Continue",
+  render:()=>{
+    const s = S.s3, c = CHAL[s.chal], solved = c.done(s);
+    return `
+    <h2>Making the chart tell a different story</h2>
+    <p class="lede">The quarter has finished and all 12 weeks are on the sheet. The figures below never
+       change. Only the way the chart draws them changes.</p>
+    <div class="task${solved?" done":""}">
+      <span class="n">${solved?"Completed":c.n}</span>
+      <div><p class="q">${solved?"That is the chart.":c.q}</p>
+        <p class="sub">${solved
+          ? c.win + (s.chal===1 ? " Select Go to challenge 2 at the bottom of the screen." : " Select Continue at the bottom of the screen.")
+          : c.sub}</p></div>
+    </div>
+    <div class="split wide-right">
+      <div>
+        <div class="ctrl"><span class="lbl" id="bl">Where the scale starts</span>
+          <div class="seg" role="group" aria-labelledby="bl">
+            <button type="button" data-base="0" aria-pressed="${s.base===0}">Zero</button>
+            <button type="button" data-base="4600" aria-pressed="${s.base===4600}">4,600</button>
+          </div></div>
+        <div class="ctrl"><span class="lbl" id="rl">Which weeks are shown</span>
+          <div class="seg" role="group" aria-labelledby="rl">
+            <button type="button" data-range="all" aria-pressed="${s.range==="all"}">All 12</button>
+            <button type="button" data-range="early" aria-pressed="${s.range==="early"}">Weeks 1&ndash;7</button>
+            <button type="button" data-range="late" aria-pressed="${s.range==="late"}">Weeks 8&ndash;12</button>
+          </div></div>
+
+      </div>
+      <div class="sticky-col">
+        ${chart({measure:"units", weeks:RANGES[s.range], base:s.base, static:true,
+                 tableCols:["units","target"]})}
+        <div class="slot ${solved?"ok":""}" id="fb" data-empty="">${
+          solved ? `<span class="k">${c.doneN}</span> ${c.win}` : s3caption()}</div>
+      </div>
+    </div>`;
+  },
+  bind:()=>{
+    wireTips();
+    const after = ()=>{
+      const s = S.s3, c = CHAL[s.chal];
+      if (c.done(s)){ if (s.chal===1) s.trouble = true; else s.success = true; }
+      draw(); refreshNav();
+      const solved = c.done(s);
+      if (!solved){
+        const f = el("fb");
+        if (f) f.innerHTML = `${s3caption()}<br><span class="muted">${c.nudge(s.base, s.range)}</span>`;
+        announce(`${s3caption()} ${c.nudge(s.base, s.range)}`);
+      } else {
+        announce(`${c.doneN} ${c.win}`);
+      }
+    };
+    document.querySelectorAll("[data-base]").forEach(b=>b.onclick=()=>{ S.s3.base = +b.dataset.base; after(); });
+    document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{ S.s3.range = b.dataset.range; after(); });
+  },
+  // The only way forward is the main Continue button, so challenge 2 is reached
+  // through it rather than through a separate button further up the page.
+  ok:()=>CHAL[S.s3.chal].done(S.s3),
+  next:()=>S.s3.chal===1 ? "Go to challenge 2" : "Compare the two charts",
+  onNext:()=>{
+    if (S.s3.chal===1){
+      S.s3.chal = 2; S.s3.base = 0; S.s3.range = "all";
+      draw({keepFocus:false}); window.scrollTo(0,0); focusTop();
+      announce(`Challenge 2 of 2. ${CHAL[2].q}`);
+      return false;                       // stay on this screen
+    }
+    return true;
+  },
+  hint:()=>S.s3.chal===1 ? "Challenge 1 still to complete" : "Challenge 2 still to complete"
+};
+
+/* ============================================================
+   4. Isolating each change, so the learner leaves understanding
+      the two methods rather than the two button presses.
+   ============================================================ */
+const VIEWS = {
+  honest: { lbl:"The full picture", base:0, range:"all",
+            t:"All 12 weeks, measured from zero. Week 7 is clearly the odd one out, and weeks 10 to 12 are clearly above target." },
+  scale:  { lbl:"Change 1: cut the scale", base:4600, range:"all",
+            t:"All 12 weeks are still on the chart. The scale starts at 4,600 instead of zero, so the eye reads only the part of each bar above 4,600. Ordinary weeks suddenly look very different from each other." },
+  weeks:  { lbl:"Change 2: hide some weeks", base:0, range:"late",
+            t:"The scale is honest again, but seven weeks have gone. Weeks 8 to 12 are real figures, and so are the seven now missing. Whoever chooses where a chart starts and stops chooses what it says." }
+};
+
+ST[4] = {
+  label:"What changed", next:"Continue",
+  render:()=>{
+    const s = S.s4, v = VIEWS[s.view];
+    const bothSeen = s.seen.includes("scale") && s.seen.includes("weeks");
+    return `
+    <h2>Comparing the two versions</h2>
+    <p class="lede">You just built two charts that give opposite impressions of the same twelve figures.
+       Here is each change on its own, so you can see exactly what it does.</p>
+    <div class="task${bothSeen?" done":""}">
+      <span class="n">${bothSeen?"Completed":"Your task"}</span>
+      <div><p class="q">${bothSeen
+        ? "Those are the two changes, and neither one altered a figure."
+        : "Switch between the three versions and watch what happens to the bars."}</p>
+        <p class="sub">${bothSeen
+        ? "A chart can be completely accurate and still leave the wrong impression."
+        : `You have viewed ${s.seen.length} of the 3 versions.`}</p></div>
+    </div>
+    <div class="ctrl">
+      <span class="lbl" id="vlbl">Show me</span>
+      <div class="seg" role="group" aria-labelledby="vlbl">
+        ${Object.entries(VIEWS).map(([k,x])=>
+          `<button type="button" data-view="${k}" aria-pressed="${s.view===k}">${x.lbl}</button>`).join("")}
+      </div>
+    </div>
+    ${chart({measure:"units", weeks:RANGES[v.range], base:v.base, static:true,
+             hot:s.view==="scale"?[7]:[], tableCols:["units","target"]})}
+    <div class="slot ok" id="fb">${v.t}</div>
+    ${s.view==="scale" ? `<div class="panel note-card fade">
+      <h3><span class="pre">Worth noticing</span>Week 7 has fallen off the bottom</h3>
+      <p class="small" style="margin:0">Week 7 produced 3,650 units, below the 4,600 baseline. The small
+         marker left at week 7 is not its value; it is all the chart can draw. The table below the chart
+         still shows 3,650. A figure can all but vanish from a chart without anything saying so.</p>
+    </div>` : ""}
+    ${bothSeen ? `<div class="panel takeaway rise">
+      <h3>The two changes, in plain terms</h3>
+      <p class="small" style="margin:0"><strong>Cutting the bottom off the scale</strong> breaks the link
+         between bar height and the figure, and anything below the new baseline disappears.
+         <strong>Choosing which weeks to show</strong> changes the impression without changing a figure.</p>
+      <p class="small" style="margin:8px 0 0">Neither is a false statement, which is what makes them easy
+         to miss. Two things worth checking on any chart: where the scale starts, and what period it covers.</p>
+    </div>` : ""}`;
+  },
+  bind:()=>{
+    wireTips();
+    document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{
+      const k = b.dataset.view;
+      S.s4.view = k;
+      if (!S.s4.seen.includes(k)) S.s4.seen.push(k);
+      draw(); refreshNav(); announce(`${VIEWS[k].lbl}. ${VIEWS[k].t}`);
+    });
+  },
+  ok:()=>S.s4.seen.includes("scale") && S.s4.seen.includes("weeks"),
+  hint:()=>"View both of the changes to continue"
+};
+
+/* ============================================================
+   5. The average. One idea, one control, one picture.
+   ============================================================ */
+ST[5] = {
+  label:"The average", next:"Continue",
+  render:()=>{
+    const s = S.s5;
+    const mean = s.incl7 ? MEAN_ALL : MEAN_NO7;
+    return `
+    <h2>What an average can hide</h2>
+    <p class="lede">The team email for the quarter says: &ldquo;Line 3 averaged under 4,850 units a week.&rdquo;
+       That is accurate. The control below shows what it rests on.</p>
+    <div class="task">
+      <span class="n">Your task</span>
+      <div><p class="q">Switch week 7 in and out of the average and watch the line move.</p>
+        <p class="sub">The bars do not change. Only which weeks are counted changes.</p></div>
+    </div>
+    <div class="ctrl">
+      <span class="lbl" id="il">Count week 7, the storm week, in the average?</span>
+      <div class="seg" role="group" aria-labelledby="il">
+        <button type="button" data-incl="1" aria-pressed="${s.incl7}">Include week 7</button>
+        <button type="button" data-incl="0" aria-pressed="${!s.incl7}">Leave week 7 out</button>
+      </div>
+    </div>
+    ${chart({measure:"units", weeks:RANGES.all, static:true, mean, unitKey:String(s.incl7),
+             noTarget:true, dim:s.incl7?[]:[7], tableCols:["units","target"],
+             title:"Units produced each week, with the average marked"})}
+    <div class="slot ok" id="fb">
+      <span class="k">${num(Math.round(mean))} units a week on average</span>,
+      counting ${s.incl7 ? "all 12 weeks" : "11 weeks with week 7 left out"}.
+      The median is ${num(MEDIAN)} units: put all 12 figures in order, and the two middle ones are
+      ${num(MED_LO)} and ${num(MED_HI)}, so halfway between them is ${num(MEDIAN)}. No single week
+      produced exactly that.
+    </div>
+    <div class="panel takeaway">
+      <p class="small" style="margin:0">Both averages are accurate. One week in twelve moves the figure by
+         more than 100 units a week, making the other eleven look worse than they were. Leaving week 7 out
+         misleads the other way, because it did happen. The useful version gives both figures and says why
+         they differ.</p>
+    </div>`;
+  },
+  bind:()=>{
+    wireTips();
+    document.querySelectorAll("[data-incl]").forEach(b=>b.onclick=()=>{
+      S.s5.incl7 = b.dataset.incl==="1";
+      // Clicking the already-selected button must not satisfy the gate: the
+      // included state is what the screen opens on, so only the excluded one counts.
+      if (!S.s5.incl7) S.s5.sawExcluded = true;
+      draw(); refreshNav();
+      const mean = S.s5.incl7 ? MEAN_ALL : MEAN_NO7;
+      announce(`${num(Math.round(mean))} units a week on average, counting ${S.s5.incl7?"all 12 weeks":"11 weeks with week 7 left out"}. The median is ${num(MEDIAN)} units, halfway between the two middle figures of ${num(MED_LO)} and ${num(MED_HI)}.`);
+    });
+  },
+  ok:()=>S.s5.sawExcluded,
+  hint:()=>"Select Leave week 7 out to see the other average"
+};
+
+/* ============================================================
+   6. The last five weeks: reveal the other measures, then the
+      week 10 context. Scrap in parts is a separate step.
+   ============================================================ */
+const COLFB = {
+  dt:   { k:"", t:`<span class="k">Downtime fell from 12 hours in week 8 to 8 hours in week 12.</span>
+          Looked at on its own, that is an improvement.` },
+  fc:   { k:"", t:`<span class="k">Fault calls fell from 20 in week 8 to 13 in week 12.</span>
+          That is 7 fewer calls, a drop of about a third. Looked at on its own, that is also an improvement.` },
+  scrap:{ k:"no", t:`<span class="k">Scrap moved the other way.</span> It was 1.9% in week 10, then 2.3%,
+          then 2.6%, which is the highest of any week except the storm week. Three measures improved and
+          one got worse.` }
+};
+// Arrows compare a week with the one above it in the table, and show nothing
+// when the value has not changed. Week 11 and week 12 both recorded 8 hours.
+function trendVs(n, key, firstWeek){
+  if (n <= firstWeek) return "";
+  const now = wk(n)[key], prev = wk(n-1)[key];
+  if (now === prev) return "";
+  return now < prev ? "down" : "up";
+}
+const TREND = {
+  dt:   n=> trendVs(n, "dt", RANGES.late[0]),
+  fc:   n=> trendVs(n, "fc", RANGES.late[0]),
+  scrap:n=> trendVs(n, "scrap", RANGES.late[0])
+};
+
+ST[6] = {
+  label:"The last five weeks", next:"Continue",
+  render:()=>{
+    const s = S.s6, cols = ["units","target"].concat(s.cols);
+    const all3 = s.cols.length===3;
+    const trend = {}; s.cols.forEach(c=>trend[c] = TREND[c]);
+    return `
+    <h2>The last five weeks</h2>
+    <p class="lede">Weeks 10, 11 and 12 all finished above target, which makes them the strongest run of
+       the quarter on units. The table starts with units only.</p>
+    <div class="task${s.noteRead?" done":""}${all3&&!s.noteRead?" turn":""}">
+      <span class="n">${all3 ? (s.noteRead?"Completed":"Next step") : "Your task"}</span>
+      <div>
+        <p class="q">${all3
+          ? (s.noteRead ? "Three things changed at the same time in week 10."
+                        : "Two other things changed in week 10. Read the supervisor's note.")
+          : "Add the other measures to the table, in whatever order you choose."}</p>
+        <p class="sub">${all3
+          ? (s.noteRead ? "None of this shows that one change caused another."
+                        : "You have seen what the figures did. Now look at what else happened.")
+          : `${3-s.cols.length} of 3 measures still hidden.`}</p>
+      </div>
+    </div>
+    <div class="split wide-right">
+      <div>
+        <div class="ctrl"><span class="lbl" id="cl">Add a measure</span>
+          <div class="seg" role="group" aria-labelledby="cl">
+            ${[["dt","Downtime"],["fc","Fault calls"],["scrap","Scrap %"]].map(([k,t])=>
+              `<button type="button" data-col="${k}" aria-pressed="${s.cols.includes(k)}"
+                ${s.cols.includes(k)?"disabled":""}>${s.cols.includes(k)?"&#10003; "+t:"+ "+t}</button>`).join("")}
+          </div></div>
+        <div class="slot ${s.last?COLFB[s.last].k:""}" id="fb"
+             data-empty="Add a measure to see what it does.">${s.last?COLFB[s.last].t:""}</div>
+        ${all3 && !s.noteRead ? `<p style="margin:14px 0 0"><button type="button" class="btn btn-sec" id="noteBtn">Read the note about week 10</button></p>` : ""}
+      </div>
+      <div class="sticky-col">
+        ${dataTable(RANGES.late, cols, null,
+          {fresh:s.last, trend, divider:s.noteRead?10:null,
+           caption: (s.cols.length ? "Arrows compare each week with the one above. " : "")
+             + (s.noteRead ? "The rule marks week 10." : "Weeks 8 to 12.")})}
+      </div>
+    </div>
+    ${s.noteRead ? `
+    <div class="panel note-card fade"><h3><span class="pre">From the supervisor</span>Note for week 10</h3>
+      <p class="small" style="margin:0">${SUP_NOTES[10]}</p></div>
+    <div class="duo" style="margin-top:14px">
+      <div class="panel" style="margin:0">
+        <h3>More units, or more hours?</h3>
+        <p class="small" style="margin:0">Saturday shifts started in week 10. More units might mean the
+           line is running better, or that it simply ran for longer. <strong>The sheet has no column for
+           hours worked</strong>, so these figures cannot tell you which.</p>
+      </div>
+      <div class="panel" style="margin:0">
+        <h3>Fewer faults, or a different form?</h3>
+        <p class="small" style="margin:0">The form used to log fault calls also changed in week 10.
+           <strong>The sheet does not say whether the new form records the same things in the same
+           way.</strong> Until somebody checks, there is no way to know whether the counts either side of
+           week 10 can fairly be compared.</p>
+      </div>
+    </div>` : ""}`;
+  },
+  bind:()=>{
+    document.querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>{
+      const k = b.dataset.col;
+      if (!S.s6.cols.includes(k)) S.s6.cols.push(k);
+      S.s6.last = k; draw(); refreshNav(); announce(COLFB[k].t);
+    });
+    const nb = el("noteBtn");
+    if (nb) nb.onclick = ()=>{ S.s6.noteRead = true; draw(); refreshNav();
+      announce("Note from the supervisor. " + SUP_NOTES[10]); };
+  },
+  ok:()=>S.s6.noteRead,
+  hint:()=>S.s6.cols.length<3 ? `${3-S.s6.cols.length} measures still hidden` : "Read the note about week 10"
+};
+
+/* ============================================================
+   7. Scrap as a share and as parts. One idea, two linked charts.
+   ============================================================ */
+function s7Remaining(){
+  const need = [7,12].filter(n=>!S.s7.picked.includes(n));
+  if (!need.length) return "Both are now selected.";
+  return need.length===2 ? "Neither is selected yet."
+                         : `Week ${need[0]} is still to select.`;
+}
+
+ST[7] = {
+  label:"Share or parts", next:"Continue",
+  render:()=>{
+    const s = S.s7, p = s.pick;
+    const enough = s.picked.includes(7) && s.picked.includes(12);
+    return `
+    <h2>Scrap as a share, and scrap as parts</h2>
+    <p class="lede">The sheet records scrap as a percentage, but it does not say what that percentage is
+       a share of. The weeks did not all produce the same amount, which matters once you try to turn a
+       percentage into a number of parts.</p>
+    <div class="panel note-card">
+      <h3><span class="pre">Read this first</span>What the estimates below assume</h3>
+      <p class="small" style="margin:0">For this activity, <strong>assume the percentage is a share of the
+         units produced that week</strong>, so estimated scrap parts = units produced &times; scrap % &divide; 100.
+         The sheet does not define it, so these are estimates for comparing weeks, not confirmed counts of
+         parts scrapped.</p>
+    </div>
+    <div class="task${enough?" done":""}">
+      <span class="n">${enough?"Completed":"Your task"}</span>
+      <div><p class="q">${enough
+        ? "A percentage of a larger number can hide a larger number."
+        : "Select a week in either chart. Both charts will highlight it."}</p>
+        <p class="sub">${enough
+        ? "If the thing you care about is parts in the bin, ask for parts in the bin."
+        : `Select week 7 and week 12, and any others you want to compare. ${s7Remaining()}`}</p></div>
+    </div>
+    <div class="slot ${p?"ok":""}" id="fb2" style="min-height:92px"
+         data-empty="Select a week in either chart to see both figures side by side.">${
+      p ? `<div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:19px">
+             <strong>Week ${p}:</strong>
+             <span><strong>${wk(p).scrap.toFixed(1)}%</strong> of ${num(wk(p).units)} units produced</span>
+             <span class="sr">gives</span><span aria-hidden="true">=</span>
+             <span class="k" style="font-size:22px">an estimated ${parts(p)} parts</span>
+           </div>
+           <p class="tiny" style="margin:5px 0 0">On the same assumption: storm week an estimated
+             ${parts(7)} parts at ${wk(7).scrap.toFixed(1)}%, week 12 an estimated ${parts(12)} parts at
+             ${wk(12).scrap.toFixed(1)}%.</p>` : ""}</div>
+    <div class="duo" style="margin-top:16px">
+      <div>${chart({measure:"scrap", weeks:RANGES.all, size:"sm", selected:p, id:"plotA",
+                     hot:p?[p]:[], dim:p?RANGES.all.filter(x=>x!==p):[], noTable:true})}</div>
+      <div>${chart({measure:"sparts", weeks:RANGES.all, size:"sm", selected:p, id:"plotB",
+                     hot:p?[p]:[], dim:p?RANGES.all.filter(x=>x!==p):[], noTable:true})}</div>
+    </div>
+    ${enough ? `<div class="panel takeaway rise">
+      <h3>Why the two charts have different shapes</h3>
+      <p class="small" style="margin:0">As a share, the storm week looks half again as bad as week 12:
+         3.9% against 2.6%. Using the assumption above, the two estimates come out close, about
+         ${parts(7)} parts against about ${parts(12)}. Week 12 is the strongest week on the sheet for
+         units, so a lower percentage there need not mean much less stock in the bin.</p>
+      <p class="small" style="margin:8px 0 0">Week 11 points the other way: 2.3% sounds better than week
+         5's 2.4%, but the estimates are about ${parts(11)} parts against about ${parts(5)}. Those two are
+         close enough that the real counts could fall either way, which makes this a reason to ask for the
+         actual figures rather than a finding about them.</p>
+    </div>
+    <div class="panel">
+      <h3>What these parts figures are, and are not</h3>
+      <p class="small" style="margin:0">These are estimates, not counts. The sheet does not say what the
+         percentage is a share of, or whether &ldquo;units produced&rdquo; already has scrapped parts
+         removed. A different definition would give different numbers, and nothing on the sheet tells you
+         how different.</p>
+      <p class="small" style="margin:8px 0 0">The percentages are also recorded to one decimal place, so
+         two weeks whose estimates sit a part or two apart could be the other way round in reality. Ask
+         for the actual counts before relying on either figure.</p>
+    </div>` : ""}
+    <details class="noprint"><summary style="cursor:pointer;font-size:14.5px;color:#0b63ce;padding:7px 0">Show both charts as a table</summary>
+      ${dataTable(RANGES.all, ["units","scrap","sparts"], p, {caption:"All 12 weeks. Estimated parts assume the percentage is a share of units produced."})}</details>`;
+  },
+  bind:()=>{
+    wireTips();
+    document.querySelectorAll(".col[data-week]").forEach(b=>b.onclick=()=>{
+      const n = +b.dataset.week;
+      S.s7.pick = n;
+      if (!S.s7.picked.includes(n)) S.s7.picked.push(n);
+      draw(); refreshNav();
+      announce(`Week ${n}. ${wk(n).scrap.toFixed(1)} per cent of ${num(wk(n).units)} units produced gives an estimated ${parts(n)} parts, on the assumption stated above.`);
+    });
+  },
+  ok:()=>S.s7.picked.includes(7) && S.s7.picked.includes(12),
+  hint:()=>{
+    const need = [7,12].filter(n=>!S.s7.picked.includes(n));
+    return need.length===2 ? "Select week 7 and week 12 to continue"
+                           : `Select week ${need[0]} to continue`;
+  }
+};
+
+/* ============================================================
+   8. The note. A part-written workplace document with gaps,
+      not three assessment questions.
+   ============================================================ */
+const BLANKS = [
+  { k:"a", lead:"After reviewing Line 3's production figures for weeks 1 to 12, I noticed that",
+    why:"A trend, or a week that stood out.",
+    starters:["weeks 10 to 12 all finished above target, but scrap rose at the same time",
+              "week 7 had the lowest production and the highest downtime, fault calls and scrap percentage",
+              "scrap reached its highest level of the quarter outside week 7 in week 12"] },
+  { k:"b", lead:"The sheet does not cover everything, though. From these figures alone I cannot tell",
+    why:"Something missing that you would need in order to be sure.",
+    starters:["how many hours were worked once the Saturday shifts started",
+              "whether the new fault form records the same things as the old one",
+              "how many parts were scrapped, rather than what percentage"] },
+  { k:"c", lead:"Before we act on these numbers, the question I would like to raise is",
+    why:"The one question you would ask first.",
+    starters:["can we see hours worked alongside units produced",
+              "has anyone compared the old and new fault forms",
+              "what is driving the rise in scrap across weeks 11 and 12"] }
+];
+
+ST[8] = {
+  label:"Your note", next:"Finish and see my notes",
+  render:()=>`
+    <h2>Your note for the team meeting</h2>
+    <p class="lede">Your supervisor is going through the quarter at Monday's team meeting. The note below
+       is already part written. Fill in the three gaps in your own words.</p>
+    <div class="task">
+      <span class="n">Final step</span>
+      <div><p class="q">Complete the note by filling in the three gaps.</p>
+        <p class="sub">A sentence in each is plenty, and you can leave any gap empty. Nothing is marked or
+           sent anywhere. The figures are underneath if you need them.</p></div>
+    </div>
+    <div class="doc">
+      <div class="dochead">
+        <h3>Note for the Monday team meeting</h3>
+        <p class="docmeta">Subject: Line 3 production figures, weeks 1 to 12</p>
+      </div>
+      ${BLANKS.map(b=>`
+        <p>${b.lead}</p>
+        <textarea id="f_${b.k}" data-stem="${b.k}" rows="2"
+          aria-label="${esc(b.lead)}">${esc(S.s8[b.k])}</textarea>
+        <p class="why">${b.why}
+          <button type="button" class="starter" data-open="${b.k}" aria-expanded="false"
+            aria-controls="chips_${b.k}">Show some examples</button></p>
+        <div class="egs noprint hidden" id="chips_${b.k}">
+          <p class="tiny" style="margin:0 0 5px">Examples of the kind of thing people write here. Use them
+             for an idea, then write your own in the box above.</p>
+          <ul class="tiny" style="margin:0 0 0 18px; padding:0">
+            ${b.starters.map(t=>`<li style="margin-bottom:3px">${t}</li>`).join("")}
+          </ul>
+        </div>
+        `).join("")}
+      <p>I am not suggesting anything is wrong with the line. I would just rather ask the question before
+         we treat these figures as settled.</p>
+      <p class="noprint" style="margin-top:18px"><button type="button" class="jump" id="toData">Jump to the figures below</button></p>
+    </div>
+    ${S.s8.nudged && !S.s8.skip && !BLANKS.some(b=>S.s8[b.k].trim()) ? `
+    <div class="panel note-card noprint fade" id="nudge">
+      <h3><span class="pre">Before you finish</span>You have not written anything yet</h3>
+      <p class="small" style="margin:0">The three gaps are the part of this activity where you work out
+         your own question, so it is worth trying one sentence even if it is rough. Nothing is marked.</p>
+      <p style="margin:10px 0 0"><button type="button" class="btn btn-sec" id="skipBtn">Continue without writing anything</button></p>
+    </div>` : ""}
+
+    <h3 id="figures" style="margin-top:26px">Line 3, weeks 1 to 12</h3>
+    <p class="tiny" style="margin-top:0">Your note is kept as you type, so you can scroll down and back.</p>
+    <div class="only-wide">
+      ${dataTable(RANGES.all, ["units","target","dt","fc","scrap","sparts"], null,
+        {caption:"Estimated scrap parts assume the percentage is a share of units produced. They are estimates, not counts."})}
+    </div>
+    <div class="only-narrow">
+      ${dataTable(RANGES.all, ["units","target"], null, {caption:"Units and target."})}
+      ${dataTable(RANGES.all, ["dt","fc"], null, {caption:"Downtime and fault calls."})}
+      ${dataTable(RANGES.all, ["scrap","sparts"], null, {caption:"Scrap percentage, and the estimated parts that assumes a share of units produced."})}
+    </div>
+    <div class="panel">
+      <h3>The supervisor's notes for the quarter</h3>
+      <p class="small" style="margin:0">${SUP_NOTES[7]}</p>
+      <p class="small" style="margin:5px 0 0">${SUP_NOTES[10]}</p>
+    </div>
+    <p class="noprint"><button type="button" class="jump" id="toNote">Back to the note</button></p>`,
+  bind:()=>{
+    document.querySelectorAll("[data-stem]").forEach(t=>t.oninput=()=>{ S.s8[t.dataset.stem]=t.value; });
+    document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{
+      const box = el("chips_"+b.dataset.open);
+      const hidden = box.classList.toggle("hidden");
+      b.setAttribute("aria-expanded", String(!hidden));
+      b.textContent = hidden ? "Show some examples" : "Hide the examples";
+      if (!hidden) announce("Examples shown. These are here to give you an idea. Write your own sentence in the box.");
+    });
+
+    const sk = el("skipBtn");
+    if (sk) sk.onclick = ()=>{ S.s8.skip = true; S.stage = 9; gotoStage(); };
+    const d = el("toData"), n = el("toNote");
+    if (d) d.onclick = ()=>{ const f = el("figures"); f.setAttribute("tabindex","-1"); f.focus();
+      f.scrollIntoView({behavior:"smooth", block:"start"}); };
+    if (n) n.onclick = ()=>{ const f = el("f_a"); f.focus(); f.scrollIntoView({behavior:"smooth", block:"center"}); };
+  },
+  // Writing stays optional, but finishing with all three gaps empty prompts
+  // once before letting the learner go on.
+  ok:()=>true,
+  onNext:()=>{
+    const written = BLANKS.some(b=>S.s8[b.k].trim());
+    if (written || S.s8.skip) return true;
+    if (!S.s8.nudged){
+      S.s8.nudged = true;
+      draw();
+      const n = el("nudge");
+      if (n){ n.setAttribute("tabindex","-1"); n.focus(); n.scrollIntoView({block:"center"}); }
+      announce("You have not written anything yet. Try one sentence, or choose to continue without writing anything.");
+      return false;
+    }
+    return true;
+  }
+};
+
+/* ============================================================
+   9. The completed note, for printing
+   ============================================================ */
+const MNAME = { units:"units produced", dt:"downtime", fc:"fault calls", scrap:"scrap" };
+
+ST[9] = {
+  label:"Your notes", next:"Print my notes", final:true,
+  render:()=>{
+    const s2 = S.s2, s6 = S.s6, s8 = S.s8;
+    const order = s6.cols.map(k=>MNAME[k]);
+    const filled = BLANKS.filter(b=>s8[b.k].trim());
+    return `
+    <div class="done-hero noprint">
+      <div class="tickwrap" aria-hidden="true">&#10003;</div>
+      <h2 style="margin:0">You have completed the activity</h2>
+      <p class="lede" style="margin:8px auto 0">You read the sheet, built two misleading charts on purpose,
+         and found the questions these figures cannot answer. Your notes are below.</p>
+    </div>
+    <div class="card">
+      <h3>Written by me</h3>
+      <p class="tiny" style="margin:0 0 14px">Note for the Monday team meeting. Line 3 production figures,
+         weeks 1 to 12.</p>
+      ${filled.length
+        ? filled.map(b=>{
+            const t = s8[b.k].trim();
+            return `<p class="para">${b.lead} ${esc(t)}${/[.!?]$/.test(t)?"":"."}</p>`;
+          }).join("")
+          + `<p class="para">I am not suggesting anything is wrong with the line. I would just rather ask
+             the question before we treat these figures as settled.</p>`
+        : `<p class="para muted">I chose not to write a note for the meeting.</p>`}
+    </div>
+    <div class="card">
+      <h3>What I did in the activity</h3>
+      <dl style="margin-top:0">
+        <dt>The week I chose to investigate</dt>
+        <dd>${s2.week
+          ? `Week ${s2.week}: ${num(wk(s2.week).units)} units, ${wk(s2.week).dt} hours of downtime,
+             ${wk(s2.week).fc} fault calls, ${wk(s2.week).scrap.toFixed(1)}% scrap.`
+          : "Not recorded."}</dd>
+        ${s2.answer ? `<dt>My decision about week 7, after reading the note about the storm</dt>
+        <dd>${s2.answer==="yes"
+          ? "I would still ask about week 7."
+          : "I decided not to raise week 7 for now."}</dd>` : ""}
+        <dt>Measures I checked before deciding</dt>
+        <dd>${s2.seen.length ? s2.seen.map(k=>MNAME[k]).join(", ") : "units only"}</dd>
+        <dt>Measures I chose to look at in weeks 8 to 12</dt>
+        <dd>${order.length ? order.join(", then ") : "Not recorded."}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Supplied with the activity, for reference</h3>
+      <p class="tiny" style="margin:0 0 4px">This section is part of the learning resource. It is not
+         something I worked out myself.</p>
+      <dl style="margin-top:0">
+        <dt>Ways the same figures can give a misleading impression</dt>
+        <dd>A chart whose scale does not start at zero, which can also drop a week off the chart entirely.<br>
+            A chart that shows only part of the period.<br>
+            An average pulled down by one unusual week: ${num(Math.round(MEAN_ALL))} counting week 7,
+            ${num(Math.round(MEAN_NO7))} without it, against a median of ${num(MEDIAN)} across all 12 weeks.<br>
+            A scrap percentage with no definition of what it is a share of, so it cannot be turned into a reliable number of parts.<br>
+            A measure recorded on a different form from week 10 onwards.</dd>
+        <dt>The supervisor's notes for the quarter</dt>
+        <dd>${SUP_NOTES[7]}<br>${SUP_NOTES[10]}</dd>
+        <dt>Three questions worth asking of any sheet of figures</dt>
+        <dd>Compared with what? &nbsp;&middot;&nbsp; Counted how? &nbsp;&middot;&nbsp; What is missing?</dd>
+      </dl>
+    </div>
+    <h3>The figures, as supplied</h3>
+    ${dataTable(RANGES.all, ["units","target","dt","fc","scrap"], null, {caption:"Line 3, weeks 1 to 12."})}
+    <div class="done-actions noprint">
+      <button type="button" class="btn btn-big" id="printBtn">Print my notes</button>
+      <button type="button" class="btn btn-sec btn-big" id="againBtn">Start again</button>
+    </div>`;
+  },
+  bind:()=>{
+    const p = el("printBtn"); if (p) p.onclick = ()=>window.print();
+    const a = el("againBtn");
+    if (a) a.onclick = ()=>{ if (confirm("Clear your answers and start again from the beginning?")) location.reload(); };
+    confetti();
+  },
+  ok:()=>true
+};
+
+/* Brief, shown once, never printed, never under reduced motion. */
+let confettiDone = false;
+function confetti(){
+  const box = el("confetti");
+  if (!box || confettiDone) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  confettiDone = true;
+  const cols = ["#3d5a73","#1f5f3f","#7a3b12","#1d3448","#8aa0b2"];
+  for (let i=0;i<28;i++){
+    const b = document.createElement("b");
+    b.style.left = (Math.random()*100) + "vw";
+    b.style.background = cols[i % cols.length];
+    b.style.animationDuration = (1.5 + Math.random()*1.1) + "s";
+    b.style.animationDelay = (Math.random()*0.5) + "s";
+    box.appendChild(b);
+  }
+  setTimeout(()=>{ box.innerHTML = ""; }, 3400);
+}
+
+/* ============================================================
+   DESIGN LENS
+   A reviewer feature, off by default. Every explanation below
+   restates a decision already recorded in the project's own
+   design notes. Where no reason was recorded, nothing is marked.
+   Nothing here changes the activity: annotations are attached to
+   the rendered page after each redraw and removed cleanly.
+   ============================================================ */
+const LENS = [
+  { sel:".task", t:"The task sits above the work",
+    d:"An earlier version put results underneath the controls, so learners clicked, scrolled down to read what happened, then scrolled back up. The current task, the control and the response now stay together on one screen." },
+  { sel:".slot", t:"A feedback box that never moves",
+    d:"The response area is always present and keeps its height when empty, so the page does not jump when feedback appears. It sits beside the control that fills it rather than at the bottom of the page." },
+  { sel:".plotwrap", t:"Bars are real buttons",
+    d:"Each column is an HTML button with the whole column height as its hit area, so a short bar is still easy to press and keyboard focus works without extra code. Charts that do nothing when clicked are not focusable at all." },
+  { sel:"details", t:"Every chart has a table",
+    d:"The table is the accessible equivalent of the chart, and for some of these tasks it is simply the better way to compare columns." },
+  { sel:".scrollhint", t:"Measured, not guessed",
+    d:"This hint only appears when the table really is wider than the screen. It is added by measuring the table after it renders rather than assuming a screen size." },
+  { sel:".nav", t:"One way forward, always in the same place",
+    d:"A single forward control for the whole activity. It stays disabled until the step's task is done, and the note beside it says what is still needed, so nobody has to guess why they cannot continue." },
+
+  { stage:0, sel:".startblock", t:"Starting is a separate step",
+    d:"The start sits in its own bordered block with its own heading. An earlier version opened straight into the first activity screen, and the activity navigation is hidden here so there is exactly one way to begin rather than two identical buttons." },
+  { stage:0, sel:".split", t:"No figures on the welcome screen",
+    d:"The weekly numbers were deliberately taken off this page. A landing page that opens with a data table is not an introduction, so the sheet appears on the next screen, where it is actually used." },
+
+  { stage:1, sel:".mcard.example", t:"A worked example before practice",
+    d:"The brief asks for a worked example first. One note is matched for the learner with the arithmetic shown, so their first attempt is not also their first explanation." },
+  { stage:1, sel:"#cards", t:"Matching, not reading off",
+    d:"Placing a note against a week means comparing two columns and doing the subtraction. Copying one figure out of a cell would not have exercised the same skill." },
+
+  { stage:2, sel:".ctrl", t:"Investigate before anything is explained",
+    d:"All four measures have to be looked at before a week can be chosen. The learner reaches a view of their own first, and the explanation comes afterwards." },
+  { stage:2, sel:".rise", t:"Ranks do not show size",
+    d:"Every measure puts the same two weeks at the bottom, so the order alone does not separate them. Showing the ranking and then the size of the gaps is the point of this screen." },
+
+  { stage:3, sel:".ctrl", t:"The learner builds the misleading chart",
+    d:"Watching a chart mislead teaches less than causing it. The control settings are also the hardest answer in this activity to arrive at by accident." },
+
+  { stage:4, sel:".note-card", t:"A value that vanishes without warning",
+    d:"Week 7 falls below the cut-off scale, so almost no bar is drawn and the chart says nothing about it. A silently dropped value is a worse deception than a stretched axis, so it is named rather than left to be noticed." },
+
+  { stage:5, sel:".chart", t:"One idea per screen",
+    d:"The target line is hidden here. It sits a few pixels from the average line and would compete with it, and this screen is about the average rather than the target." },
+
+  { stage:6, sel:"caption", t:"Arrows with a stated basis",
+    d:"Arrows compare each week with the one above and show nothing when a value has not changed. An independent audit found an earlier version marking week 12 as a fall when its downtime matched week 11." },
+
+  { stage:7, sel:".note-card", t:"The assumption comes first",
+    d:"An independent audit found the parts estimates were shown before the assumption behind them. The assumption now appears before any estimate, and the figures are called estimates everywhere they are used." },
+
+  { stage:8, sel:".doc", t:"A part-written note",
+    d:"A workplace document with gaps rather than three empty boxes. The surrounding sentences carry the structure, so the learner only has to supply the thinking." },
+  { stage:8, sel:".egs", t:"Examples, not answers",
+    d:"These are read-only. An earlier version pasted a finished sentence into the box at one click, which did the learner's thinking for them." },
+
+  { stage:9, sel:".card", t:"Their words kept separate",
+    d:"The printout separates what the learner wrote from what the activity supplied, so a note taken into a workplace never implies they reached conclusions the resource handed them." }
+];
+
+const LENS_ICON = '<svg viewBox="0 0 34 16" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="8" cy="9" r="5.6"/><circle cx="26" cy="9" r="5.6"/><path d="M13.6 8.2c1.5-1.2 5.3-1.2 6.8 0"/></svg>';
+
+let lensOn = false;
+
+function lensToggle(){
+  lensOn = !lensOn;
+  document.body.classList.toggle("lens", lensOn);
+  el("lensBtn").setAttribute("aria-pressed", String(lensOn));
+  el("lensBar").classList.toggle("hidden", !lensOn);
+  if (!lensOn) lensClear();
+  draw();
+  announce(lensOn
+    ? "Design Lens on. Notes about the design are marked on the page. These notes were written with AI from the developer's own records."
+    : "Design Lens off.");
+}
+
+function lensClear(){
+  lensHide();
+  document.querySelectorAll(".lensmark").forEach(m=>m.remove());
+  document.querySelectorAll("[data-lens]").forEach(e=>{
+    e.removeAttribute("data-lens");
+    if (e.dataset.lensPos){ e.style.position = e.dataset.lensPos === "none" ? "" : e.dataset.lensPos; delete e.dataset.lensPos; }
+  });
+}
+
+function lensApply(){
+  if (!lensOn) return;
+  lensClear();
+  LENS.forEach((a,i)=>{
+    if (a.stage !== undefined && a.stage !== S.stage) return;
+    const scope = a.sel === ".nav" ? document : el("main");
+    const e = scope.querySelector(a.sel);
+    if (!e || e.hasAttribute("data-lens")) return;
+    if (e.getBoundingClientRect().height < 2) return;   // hidden on this screen
+    e.setAttribute("data-lens", String(i));
+    const cs = getComputedStyle(e).position;
+    if (cs === "static"){ e.dataset.lensPos = "none"; e.style.position = "relative"; }
+    const m = document.createElement("button");
+    m.type = "button"; m.className = "lensmark"; m.innerHTML = LENS_ICON;
+    m.setAttribute("aria-label", "Design note: " + a.t);
+    m.dataset.lensFor = String(i);
+    e.appendChild(m);
+    const mr = m.getBoundingClientRect();
+    const head = document.querySelector("header.top").getBoundingClientRect().bottom;
+    if (mr.right > window.innerWidth - 2) m.style.right = "4px";
+    if (mr.left < 2) m.style.right = "4px";
+    if (mr.top < head + 2) m.style.top = "4px";
+    m.addEventListener("click", ev=>{ ev.stopPropagation(); lensShow(e, a); });
+    m.addEventListener("focus", ()=>lensShow(e, a));
+    m.addEventListener("blur", lensHide);
+    e.addEventListener("mouseenter", ()=>lensShow(e, a));
+    e.addEventListener("mouseleave", lensHide);
+  });
+}
+
+function lensShow(target, a){
+  const pop = el("lenspop");
+  pop.innerHTML = "";
+  const h = document.createElement("h4"); h.textContent = a.t;
+  const p = document.createElement("p"); p.textContent = a.d;
+  pop.append(h, p);
+  pop.classList.remove("hidden");
+  document.querySelectorAll(".lens-on").forEach(x=>x.classList.remove("lens-on"));
+  target.classList.add("lens-on");
+
+  // Docked above the navigation, clear of the element being described.
+  const nav = document.querySelector(".nav");
+  const navH = nav.classList.contains("hidden") ? 0 : nav.getBoundingClientRect().height;
+  pop.style.bottom = (navH + 14) + "px";
+
+  // On a phone the panel spans the width, so move the highlighted element above
+  // it rather than letting the explanation sit on top of what it describes.
+  if (window.matchMedia("(max-width:700px)").matches){
+    const pr = pop.getBoundingClientRect();
+    const head = document.querySelector("header.top").getBoundingClientRect().bottom;
+    const er = target.getBoundingClientRect();
+    const space = pr.top - head - 16;
+    let by = 0;
+    if (er.height <= space && er.bottom > pr.top - 8) by = er.bottom - (pr.top - 8);
+    else if (er.height > space && er.top < head + 8) by = er.top - (head + 8);
+    if (by){
+      const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollBy({top: by, behavior: smooth ? "smooth" : "auto"});
+    }
+  }
+}
+
+function lensHide(){
+  const pop = el("lenspop");
+  if (pop) pop.classList.add("hidden");
+  document.querySelectorAll(".lens-on").forEach(x=>x.classList.remove("lens-on"));
+}
+
+el("lensBtn").onclick = lensToggle;
+el("lensOff").onclick = lensToggle;
+document.addEventListener("keydown", e=>{ if (e.key === "Escape" && lensOn) lensHide(); });
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+function draw(opts){
+  const st = ST[S.stage];
+  const key = (opts && opts.keepFocus === false) ? null : focusKey(document.activeElement);
+  el("main").innerHTML = st.render();
+  if (st.bind) st.bind();
+  el("steps").innerHTML = ST.map((x,i)=>
+    `<span class="dot ${i<S.stage?"done":""} ${i===S.stage?"now":""}"></span>`).join("")
+    + `<span class="lbl">Step ${S.stage+1} of ${ST.length}</span>`;
+  el("steps").setAttribute("aria-label", `Step ${S.stage+1} of ${ST.length}: ${st.label}`);
+  refreshNav();
+  markScrollables();
+  lensApply();
+  restoreFocus(key);
+}
+function refreshNav(){
+  const st = ST[S.stage];
+  const next = el("nextBtn"), back = el("backBtn"), hint = el("navHint");
+  document.querySelector(".nav").classList.toggle("hidden", !!st.hideNav);
+  document.body.style.paddingBottom = st.hideNav ? "0" : "";
+  const can = st.ok ? st.ok() : true;
+  next.textContent = (typeof st.next === "function" ? st.next() : st.next) || "Continue";
+  next.disabled = !can;
+  next.classList.toggle("hidden", !!st.final);
+  back.classList.toggle("hidden", S.stage===0);
+  hint.textContent = can ? "" : (st.hint ? st.hint() : "");
+}
+el("nextBtn").onclick = ()=>{
+  const st = ST[S.stage];
+  if (st.ok && !st.ok()) return;
+  if (st.onNext && st.onNext() === false) return;   // the stage advanced itself
+  if (S.stage < ST.length-1){ S.stage++; gotoStage(); }
+};
+el("backBtn").onclick = ()=>{ if (S.stage>0){ S.stage--; gotoStage(); } };
+function gotoStage(){
+  draw({keepFocus:false});
+  window.scrollTo(0,0);
+  focusTop();
+  announce(`Step ${S.stage+1} of ${ST.length}. ${document.querySelector("#main h2").textContent}`);
+}
+draw();
+</script>
+</body>
+</html>
