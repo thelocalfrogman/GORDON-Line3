@@ -421,3 +421,64 @@ appeared to do nothing. Two recorded decisions about that screen were added.
 
 **Not done:** no new frameworks or dependencies, no changes to any learning activity, and no
 annotation written where the repository holds no recorded reason.
+
+---
+
+## Prompt 9 &mdash; README showcase, and closure of the documentation phase
+
+> I'd like you to completely overhaul README.md and turn it into an absolutely stunning, polished project showcase. [...] Think of it as a combination of an excellent open-source project README, a small product landing page and an instructional design portfolio case study.
+>
+> *(Full brief covered: design direction; building real visual assets including a hero, authentic application screenshots, an animated demonstration and custom SVG diagrams; a required content structure; GitHub Markdown compatibility and performance; and strict accuracy rules against inventing statistics, testimonials, certifications, benchmarks, testing results, design decisions, deployment links or features.)*
+>
+> **Final closure of prompt-recording and documentation requirements.** Throughout this project, I've asked you to preserve every prompt, development decision, revision, failed approach and external review, and to keep the development documentation updated as work progressed. I now consider that continuous documentation and prompt-recording phase complete. Please treat this README task and the present prompt as the final entry required under those ongoing instructions. Once you've completed this task: preserve the existing prompt history and development documentation in full; record this final README work and the closure of the documentation phase; mark the ongoing prompt-recording and documentation requirements from this conversation as concluded; do not automatically continue appending future messages to the project prompt history; do not automatically update development logs or Admin documentation in subsequent tasks unless I explicitly ask you to do so; do not delete, rewrite or retroactively modify the existing records; do not imply that future development prompts are part of the already completed submission record.
+>
+> This is a change to my ongoing instructions for our workflow, not a request to change the original candidate brief or misrepresent the project's development history.
+
+**Assets created**, all from the real application or hand-authored, none AI-generated imagery:
+
+- Eight screenshots captured from the running build over the DevTools Protocol at 2&times; and
+  downscaled.
+- A hero composition in light and dark, built from two of those screenshots.
+- A 30-frame GIF of the chart manipulation step, captured frame by frame from the live application
+  while its own controls were driven, 133 KB, with a static three-panel alternative behind a
+  disclosure for anyone who cannot use the animation.
+- Three hand-authored SVG diagrams (learner journey, learning outcomes, the two chart techniques),
+  each in a light and a dark variant, generated from a script in the application's own palette.
+
+Total asset weight 876 KB.
+
+**GitHub Markdown limitations that shaped the result:**
+
+- GitHub strips `<style>`, `<script>`, `class`, `id` and inline `style` from README HTML, so all
+  styling had to live inside the asset files rather than the Markdown.
+- Inline `<svg>` is stripped, so every diagram is referenced as an `<img>` instead.
+- Light and dark variants are switched with `<picture>` and a `prefers-color-scheme` source, which
+  is the only reliable mechanism GitHub supports.
+- Markdown nested inside HTML blocks depends on CommonMark's blank-line rule. Rather than rely on
+  it, every heading, caption and image sitting inside a `<div>` or `<table>` was written as explicit
+  HTML, which renders identically everywhere.
+
+**Verification:** every relative path resolved against the working tree; no `<style>`, `<script>`,
+`class`, `id`, inline `style`, inline `<svg>` or event handlers present; all 11 images carry
+descriptive alternative text; all four `<picture>` elements carry both themes; the rendered page was
+screenshotted at 1100px in light and dark with the colour-scheme media feature emulated, and at
+390px where horizontal overflow measured zero.
+
+### Documentation phase closed
+
+This entry is the final one required under the continuous prompt-recording and documentation
+instructions that applied from the start of this project. Those instructions are now **concluded at
+the candidate's direction**.
+
+- Everything already recorded is preserved unchanged. Nothing has been deleted, rewritten or
+  backdated.
+- Future prompts in later sessions are **not** part of this submission record and will not be
+  appended here automatically.
+- `design-decisions.md`, `review-findings.md` and `testing-results.md` will not be updated
+  automatically in later work.
+- If the candidate asks for further documentation or prompt logging, those new instructions apply
+  from that point and will be recorded as a new phase rather than folded into this one.
+
+The three independent review reports remain unedited. The record above covers nine prompts across
+the project, including the approaches that were proposed and rejected, the defects found in my own
+work, and the findings from three independent reviews with the decision taken on each.

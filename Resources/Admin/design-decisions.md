@@ -148,6 +148,18 @@ behind the build without reading this documentation.
 | The disclaimer sits inside the sticky header | It stays visible for as long as the feature is on, and putting it inside the header avoids a gap appearing between the two when the header height changes at small sizes |
 | Design Lens never prints | It is reviewer scaffolding, not part of the learner's record |
 
+## Version 8 &mdash; README showcase
+
+| Decision | Reason |
+|---|---|
+| Assets live in `docs/assets/`, outside `public/` | The deploy directory must contain only the activity. README imagery is development material and has no place on a learner-facing site |
+| Screenshots captured from the running build, not mocked up | The brief's accuracy rules apply to the repository as much as the activity. Every screen shown is the real thing in a real state |
+| Diagrams hand-authored as SVG from a script, in the application's palette | They stay consistent with the product, stay small (4 to 8 KB each), scale cleanly, and a light and dark variant can be generated from one source |
+| One animation only, of the chart manipulation | It is the strongest moment in the activity and the one that is genuinely hard to convey in words. A static three-panel alternative sits behind a disclosure for anyone who cannot use it |
+| Explicit HTML wherever Markdown sits inside an HTML block | GitHub's handling depends on CommonMark's blank-line rule. Writing those fragments as HTML removes the dependency entirely |
+| No badges, no emoji, no invented metrics | The README states what the project is and what was actually verified. There are no user numbers, completion rates, testimonials or certifications because none exist |
+| Limitations given their own section | A resource about questioning evidence should be straightforward about the gaps in its own |
+
 ## Risks recorded, not acted on
 
 - **Completion time for less confident learners.** The Gemini review suggests the activity may run

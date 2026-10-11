@@ -1,6 +1,9 @@
 
 # CLAUDE
 
+> **Documentation phase closed.** This file is complete as of 11 October 2026. At the candidate's
+> direction, it will not be updated automatically in later sessions.
+
 Review of the brief and project notes before building, 2026-10-11.
 
 ## Requirements traced to the build

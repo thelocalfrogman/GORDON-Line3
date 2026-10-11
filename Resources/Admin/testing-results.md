@@ -1,6 +1,34 @@
 
 # CLAUDE
 
+> **Documentation phase closed.** This file is complete as of the README work below. At the
+> candidate's direction, it will not be updated automatically in later sessions.
+
+## Version 8 &mdash; README and assets, 2026-10-11
+
+Presentation-layer work only. The learner-facing application was not modified: `public/index.html`
+is byte-identical to the version tested under Version 7.
+
+| Check | Result |
+|---|---|
+| Every relative image and link path resolves | 18 of 18, no broken references |
+| No `<style>`, `<script>`, `class`, `id`, inline `style`, inline `<svg>` or event handlers | Pass |
+| All HTML tags used are GitHub-allowed | Pass |
+| Alternative text on every image | 11 of 11, all descriptive rather than a filename |
+| Light and dark variants on every `<picture>` | 4 of 4 |
+| Rendered at 1100px, light theme | Pass, screenshotted and reviewed |
+| Rendered at 1100px, dark theme with `prefers-color-scheme` emulated | Pass, dark asset variants confirmed swapping |
+| Rendered at 390px | Pass, horizontal overflow measured at 0 |
+| Total asset weight | 876 KB across 18 files; largest single asset is the 133 KB GIF |
+| Animated content has a static alternative | Yes, behind a disclosure |
+| README assets excluded from the deploy directory | Yes, `docs/` sits outside `public/` |
+
+The rendering checks used a local CommonMark-ish renderer plus headless Chromium, which approximates
+GitHub but is not GitHub. Markdown nested inside HTML blocks was rewritten as explicit HTML so the
+result does not depend on that approximation being exact.
+
+---
+
 ## Version 7 &mdash; Design Lens and release, 2026-10-11
 
 ### Design Lens
