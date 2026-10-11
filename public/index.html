@@ -309,6 +309,13 @@ caption{text-align:left; padding:3px 0; font-size:13.5px; color:var(--ink-faint)
   justify-content:space-between;
 }
 .startblock h3{font-size:19px}
+.repolink{margin:16px 0 0; font-size:14px; line-height:1.6; color:var(--ink-faint)}
+.repolink a{color:var(--focus)}
+.repolink code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px;
+  background:var(--panel-2); border:1px solid var(--line-soft); border-radius:4px; padding:1px 5px;
+  color:var(--ink-soft);
+}
 @media(max-width:640px){.startblock{padding:16px; margin-top:18px} .startblock .btn-big{width:100%}}
 .done-hero{text-align:center; padding:10px 0 2px}
 .done-hero .tickwrap{
@@ -842,7 +849,13 @@ ST[0] = {
         <p class="small muted" style="margin:0">Step 1 shows you the first six weeks of the sheet.</p>
       </div>
       <button type="button" class="btn btn-big" id="startBtn" style="flex:0 0 auto">Start the activity</button>
-    </div>`,
+    </div>
+    <p class="repolink noprint">
+      Source code and development notes:
+      <a href="https://github.com/thelocalfrogman/GORDON-Line3" target="_blank" rel="noopener noreferrer">github.com/thelocalfrogman/GORDON-Line3</a><br>
+      There is also a <a href="https://moodle-production-e511.up.railway.app/local/gordon/dashboard.php?search=AI+" target="_blank" rel="noopener noreferrer">Moodle integration prototype</a>,
+      built separately to see what was possible. It is not part of this activity.
+      Access password <code>4473-63</code>.</p>`,
   bind:()=>{
     const b = el("startBtn");
     if (b) b.onclick = ()=>{ S.stage = 1; gotoStage(); };
